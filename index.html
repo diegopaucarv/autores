@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explorador de autores · CSV/JSON → Sankey + línea de tiempo</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<style>
+  :root { --bg:#f6f7fa; --fg:#222; --muted:#555; --line:#e3e5ea; --accent:#4e79a7; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:13px "Helvetica Neue",Arial,sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:14px 22px 4px; } h1 { margin:0; font-size:17px; } header p { margin:4px 0 0; color:var(--muted); font-size:12px; }
+  .bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:8px 22px; }
+  .fs { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+  .fs-msg { color:var(--muted); font-size:12px; }
+  select, button { font:inherit; padding:6px 10px; border:1.5px solid #c4c8d0; border-radius:6px; background:#fff; cursor:pointer; }
+  select:hover, button:hover { border-color:var(--accent); }
+  input[type="range"] { vertical-align: middle; cursor: pointer; }
+  #selectors { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:4px 22px 8px; }
+  .report { margin:0 22px 8px; padding:10px 14px; border:1px solid var(--line); border-radius:6px; background:#fff; line-height:1.7; }
+  .report.bad { border-color:#b00020; color:#b00020; } .report details { margin-top:4px; } .report code { background:#eef1f5; padding:0 4px; border-radius:3px; }
+  .pill { padding:2px 8px; border-radius:10px; font-weight:700; font-size:11px; } .pill.ok { background:#e8f5e9; color:#2e7d32; } .pill.warn { background:#fff4e5; color:#b26500; }
+  .chip { display:inline-block; padding:1px 8px; margin:1px 3px; border-radius:10px; background:#eef1f5; font-size:11px; } .chip.w { background:#fff4e5; color:#b26500; }
+  .w2 { color:#b26500; }
+  .legend { display:flex; flex-wrap:wrap; gap:4px 14px; padding:2px 22px 6px; font-size:11px; }
+  .legend span { display:inline-flex; align-items:center; gap:5px; } .legend i { width:12px; height:12px; border-radius:2px; display:inline-block; }
+  .panel { margin:0 22px 14px; background:#fff; border:1px solid var(--line); border-radius:6px; }
+  #timeline { max-height:520px; overflow:auto; }
+  .lbl { font-size:10px; font-weight:600; paint-order:stroke; stroke:#fff; stroke-width:3px; stroke-linejoin:round; user-select:none; pointer-events:none; }
+  .sk-node, .tl-row { cursor:pointer; transition:opacity .15s; } .sk-link { transition:opacity .15s; cursor:pointer; }
+  .empty { padding:30px; text-align:center; color:#888; font-style:italic; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Explorador de autores · Sankey + línea de tiempo</h1>
+  <p>Lee <b>.csv</b> y <b>.json</b> de la carpeta <code>data/</code>. Haz clic en un nodo o una barra para fijar la selección, clica en el fondo para borrarla.</p>
+</header>
+
+<div class="bar">
+  <div id="fs"></div>
+  <label class="fs-msg" style="margin-left:auto;">
+    Agrupación (años): 
+    <input type="range" id="cohort-slider" min="10" max="100" step="5" value="50"> 
+    <b id="cohort-val">50</b>
+  </label>
+  <button id="dl-csv" type="button">⬇ CSV</button><button id="dl-json" type="button">⬇ JSON</button>
+</div>
+<div id="report"></div>
+<div id="selectors"></div>
+<div class="legend" id="legend"></div>
+<div class="panel" id="sankey"><p class="empty">Elige un dataset arriba.</p></div>
+<div class="panel" id="timeline"></div>
+
+<script src="data.js"></script>
+<script src="dataset.js"></script>
+<script src="folder-selector.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
