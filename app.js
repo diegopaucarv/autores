@@ -276,12 +276,36 @@
     //     demás columnas se reordenan según la posición de sus lazos, para que se crucen lo menos
     //     posible. Se prueban varios órdenes (media y mediana, en los dos sentidos), gana el de menos
     //     cruces y se afina con sifting. ---
-    const skMode = S.skSort || "value", reverse = !!S.skDesc;
+    const skMode = S.skSort || "value", reverse = !!S.skDesc, colMode = cols.includes(skMode);
     const cmpText = (a, b) => String(a).localeCompare(String(b), "es");
+
+    // Color dominante de cada nodo (la categoría con más flujo entre sus lazos). Sólo se usa cuando
+    // la variable elegida en «Orden» está en el color y no como columna: entonces no hay columna que
+    // alfabetizar y lo que se ordena son las bandas de color de TODAS las columnas.
+    const cw = new Map();
+    [...links.values()].forEach((L) => {
+      [L.source, L.target].forEach((id) => {
+        if (!cw.has(id)) cw.set(id, new Map());
+        const m2 = cw.get(id), v = L.cval == null ? "" : String(L.cval);
+        m2.set(v, (m2.get(v) || 0) + L.value);
+      });
+    });
+    const domOf = (id) => {
+      const m2 = cw.get(id);
+      if (!m2) return "";
+      let best = "", bw = -1;
+      m2.forEach((w, v) => { if (w > bw) { bw = w; best = v; } });
+      return best;
+    };
+
     const ownCmp = (a, b) => {
       let c;
       if (skMode === "value") c = isTime(a.col) ? Dataset.timeValue(a.label) - Dataset.timeValue(b.label) // fechas cronológicas
         : b.value - a.value;                                                                              // mayor primero
+      else if (!colMode) { // variable de color: bandas por color dominante, y dentro de la banda, alfabético
+        const ca = domOf(a.id), cb = domOf(b.id);
+        c = ca === cb ? cmpText(a.label, b.label) : cmpText(ca, cb);
+      }
       else if (isTime(skMode)) {
         const ta = Dataset.timeValue(a.label), tb = Dataset.timeValue(b.label);
         c = ta !== tb ? ta - tb : cmpText(a.label, b.label);
@@ -290,11 +314,11 @@
       return reverse ? -c : c;
     };
 
-    // columna ancla: la de la variable elegida; en «valor» no hay variable, así que la del color
-    // (o la primera) y el resto se ordena por flujo igualmente.
-    let anchor = skMode === "value" ? -1 : cols.indexOf(skMode);
-    if (anchor < 0) anchor = cols.indexOf(S.colorKey);
-    if (anchor < 0) anchor = 0;
+    // columna ancla: la de la variable elegida. En «valor», la del color (o la primera). Si la variable
+    // elegida está sólo en el color no hay ancla fija y se reordena todo (por bandas de color).
+    let anchor;
+    if (skMode === "value") { anchor = cols.indexOf(S.colorKey); if (anchor < 0) anchor = 0; }
+    else anchor = cols.indexOf(skMode);
 
     const colNodes = new Map(cols.map((c) => [c, [...nodes.values()].filter((n) => n.col === c)]));
     const own = new Map(cols.map((c) => [c, [...colNodes.get(c)].sort(ownCmp).map((n) => n.id)]));
@@ -336,10 +360,10 @@
     };
 
     // Una pasada desde la columna ancla: hacia la derecha (de padre a ramas) o hacia la izquierda
-    // (de ramas a padre).
+    // (de ramas a padre). Sin ancla (anchor = -1) se barren todas las columnas.
     const sweep = (ord, dir, median) => {
-      if (dir > 0) for (let i = anchor + 1; i < cols.length; i++) ord.set(cols[i], flowOrder(cols[i], relRank(ord.get(cols[i - 1])), "in", median));
-      else for (let i = anchor - 1; i >= 0; i--) ord.set(cols[i], flowOrder(cols[i], relRank(ord.get(cols[i + 1])), "out", median));
+      if (dir > 0) for (let i = Math.max(0, anchor + 1); i < cols.length; i++) ord.set(cols[i], flowOrder(cols[i], i > 0 ? relRank(ord.get(cols[i - 1])) : new Map(), "in", median));
+      else for (let i = Math.min(cols.length - 1, anchor - 1); i >= 0; i--) ord.set(cols[i], flowOrder(cols[i], i + 1 < cols.length ? relRank(ord.get(cols[i + 1])) : new Map(), "out", median));
       return ord;
     };
 
