@@ -236,10 +236,15 @@
         }
       }));
     });
-    const W = 1100, perCol = d3.max(cols, (c) => [...nodes.values()].filter((n) => n.col === c).length);
+    // El ancho interno sigue el ancho real del contenedor (se adapta al visor/ventana), con un piso
+    // que coincide con el min-width del CSS: por debajo de ese piso, el panel se desplaza en horizontal
+    // en vez de aplastar las etiquetas hasta volverlas ilegibles.
+    const CW = host.node() && host.node().clientWidth;
+    const W = Math.max(560, Math.min(1500, CW || 1100));
+    const perCol = d3.max(cols, (c) => [...nodes.values()].filter((n) => n.col === c).length);
     const isName = cols.includes("name");
     const rowH = isName ? (Panel.hasExtra() ? 46 : 34) : 22;
-    const MARGIN = 170, TOP = 30, BOTTOM = 18, NODE_PAD = 12, LABEL_GAP = 4;
+    const MARGIN = Math.max(90, Math.round(W * (170 / 1100))), TOP = 30, BOTTOM = 18, NODE_PAD = 12, LABEL_GAP = 4;
 
     // --- posiciones X aproximadas por columna (antes del layout) para dimensionar las etiquetas ---
     const colStep = cols.length > 1 ? (W - 2 * MARGIN) / (cols.length - 1) : 0;
@@ -604,7 +609,9 @@
     gVal = (it) => vals(it, dimKey)[0];
     gOrd = (it) => (ord.has(gVal(it)) ? ord.get(gVal(it)) : 1e6);
     rows.sort(tlCmp); if (S.tlDesc) rows.reverse();
-    const grouped = S.tlSort === S.colorKey && S.tlSort !== "name", RH = 16, T = 30, LW = 200, W = 1100, GAP = 22;
+    const hostEl = host.node(), CW = hostEl && hostEl.clientWidth;
+    const W = Math.max(560, Math.min(1500, CW || 1100));
+    const grouped = S.tlSort === S.colorKey && S.tlSort !== "name", RH = 16, T = 30, LW = Math.min(200, Math.max(110, Math.round(W * 0.18))), GAP = 22;
     const yOf = new Map(), heads = []; let y = T, last;
     rows.forEach((it) => {
       if (grouped && gKey(it) !== last) { last = gKey(it); heads.push({ y, label: last }); y += GAP; }
@@ -612,7 +619,7 @@
     });
     const H = y + 6, start = (i) => i.__life.birth ?? i.__life.activeStart;
     const x = d3.scaleLinear().domain([d3.min(rows, start), CY]).nice().range([LW, W - 12]);
-    const svg = host.append("svg").attr("viewBox", [0, 0, W, H]).attr("width", "100%");
+    const svg = host.append("svg").attr("viewBox", [0, 0, W, H]).attr("width", "100%").style("aspect-ratio", `${W} / ${H}`);
     svg.append("g").attr("transform", `translate(0,${T - 6})`)
       .call(d3.axisTop(x).ticks(12).tickFormat((v) => (v < 0 ? -v + " a.C." : String(v))).tickSize(-(H - T)))
       .call((a) => a.selectAll(".tick line").attr("stroke", "#e6e8ec")).call((a) => a.select(".domain").remove());
@@ -730,6 +737,14 @@
     S.api.reloadFile = () => { if (S.file) fsCtl.select(S.file); };
 
     $("add-author").onclick = () => Panel.addAuthor();
+
+    // Los gráficos usan el ancho real del contenedor: si la ventana cambia de tamaño (o el móvil
+    // gira), se vuelven a maquetar para que las etiquetas se reajusten en vez de quedar desfasadas.
+    let rTimer = null;
+    window.addEventListener("resize", () => {
+      clearTimeout(rTimer);
+      rTimer = setTimeout(() => { if (S.ds) { renderSankey(); renderTimeline(); paint(); } }, 150);
+    });
   });
   S.api = { CY, WARN, color: () => color, cols: () => S.cols, renderAll, reanalyze, setPinned, setSearch };
   window.__app = S;

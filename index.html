@@ -366,7 +366,7 @@
                 display: block;
                 width: 100%;
                 height: auto;
-                min-width: 760px;
+                min-width: 560px;
             }
             #timeline {
                 max-height: 560px;
@@ -767,6 +767,20 @@
             }
 
             /* ===== 9. Responsive y movimiento ===== */
+            /* La cabecera nunca debe forzar scroll horizontal: cada hijo puede encogerse y el badge
+               de ediciones no se solapa con filas envueltas (en vez de flotar fijo en la esquina). */
+            .top-tools > * {
+                min-width: 0;
+            }
+            @media (max-width: 860px) {
+                .top {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .top-tools {
+                    width: 100%;
+                }
+            }
             @media (max-width: 720px) {
                 .top-tools {
                     width: 100%;
@@ -780,6 +794,30 @@
                 }
                 .divider {
                     display: none;
+                }
+                #edit-badge {
+                    position: static;
+                    display: inline-block;
+                    margin-left: var(--s1);
+                }
+                #detail {
+                    width: 100vw;
+                    padding: var(--gutter) var(--gutter) var(--s5);
+                }
+                #detail .row2 {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                #detail .row2 .fld {
+                    width: 100%;
+                }
+            }
+            @media (max-width: 480px) {
+                #add-author .lbl-text {
+                    display: none;
+                }
+                .fs-cur {
+                    max-width: 90px;
                 }
             }
             @media (prefers-reduced-motion: reduce) {
@@ -881,7 +919,7 @@
                     title="Agregar un autor nuevo a la lista"
                     disabled
                 >
-                    <svg class="ic"><use href="#i-plus" /></svg>Nuevo autor
+                    <svg class="ic"><use href="#i-plus" /></svg><span class="lbl-text">Nuevo autor</span>
                 </button>
                 <span class="divider" aria-hidden="true"></span>
                 <div class="grp" role="group" aria-label="Vista">
