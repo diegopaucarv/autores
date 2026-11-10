@@ -21,7 +21,7 @@
     color = (v) => m.get(v) || NEUTRAL;
   }
   const WARN = {
-    verify_alive: "vivo con ≥95 años: verificar", birth_approx: "nacimiento aproximado",
+    verify_alive: "vivo con ≥95 años", birth_approx: "nacimiento aproximado",
     death_approx: "muerte aproximada", no_birth: "sin nacimiento (solo intervalo de actividad)",
   };
   const REASON = {
@@ -98,7 +98,7 @@
 
   /* ---------- reporte de veracidad / calidad ---------- */
   function renderReport(ds) {
-    const r = ds.report, chips = (o, map, cls) => Object.entries(o || {}).map(([k, v]) => `<span class="chip ${cls}">${v}× ${esc(map[k] || k)}</span>`).join("");
+    const r = ds.report, chips = (o, map, cls, extra) => Object.entries(o || {}).map(([k, v]) => `<span class="chip ${cls}">${v}× ${esc(map[k] || k)}${extra && extra[k] ? ": " + extra[k] : ""}</span>`).join(" ");
     const merged = Object.keys(r.mergedDuplicates || {}).length;
     const nameOf = (id) => (ds.items.find((i) => i.id === id) || {}).name || id;
     $("report").innerHTML = r.error ? `<div class="report bad">${esc(r.error)}</div>` : `
@@ -107,8 +107,7 @@
         <span class="pill ${r.invalid ? "warn" : "ok"}">${r.valid}/${r.total} con fechas válidas</span>
         <span class="chip">${r.alive} vivos/activos</span>
         ${r.invalid ? "<div>Descartados: " + chips(r.reasons, REASON, "w") + "</div>" : ""}
-        ${Object.keys(r.warnings).length ? "<div>Avisos: " + chips(r.warnings, WARN, "w") + "</div>" : ""}
-        ${r.needsReview.length ? `<div class="w2">Verificar si siguen vivos: ${r.needsReview.map((i) => esc(nameOf(i))).join(" · ")}</div>` : ""}
+        ${Object.keys(r.warnings).length ? "<div>Avisos: " + chips(r.warnings, WARN, "w", { verify_alive: r.needsReview.map((i) => esc(nameOf(i))).join(" · ") }) + "</div>" : ""}
         ${r.conflicts && r.conflicts.length ? `<details><summary>${r.conflicts.length} conflictos entre duplicados (se conserva el primero)</summary>${r.conflicts.map((c) => `<div>${esc(c.name)} · ${esc(c.field)}: «${esc(c.kept)}» vs «${esc(c.other)}»</div>`).join("")}</details>` : ""}
         ${r.ignoredColumns.length ? `<div>Columnas ignoradas (derivadas): ${r.ignoredColumns.map(esc).join(", ")}</div>` : ""}
       </div>`;
@@ -170,7 +169,7 @@
     const d = S.ds.dimensions.find((x) => x.key === S.colorKey);
     (d ? d.values : []).forEach(({ value }) => {
       const s = document.createElement("span"); s.innerHTML = `<i style="background:${color(value)}"></i>`; s.append(value); s.style.cursor = "pointer"; s.title = Panel.descOf(S.colorKey, value) || "Clic: ficha y descripción";
-      s.onclick = (e) => { e.stopPropagation(); Panel.showNode(S.colorKey, value); }; lg.appendChild(s);
+      s.onclick = (e) => { e.stopPropagation(); Panel.toggleNode(S.colorKey, value); }; lg.appendChild(s);
     });
   }
 
@@ -332,7 +331,7 @@
     const ng = svg.append("g").selectAll("g").data(g.nodes).join("g").attr("class", "sk-node")
       .on("mouseenter", (_, d) => highlight(d.ids))
       .on("mouseleave", () => highlight(null))
-      .on("click", (ev, d) => { ev.stopPropagation(); if (onLabel(ev)) Panel.showNode(d.col, d.label); else pin(d.ids); })
+      .on("click", (ev, d) => { ev.stopPropagation(); if (onLabel(ev)) Panel.toggleNode(d.col, d.label); else pin(d.ids); })
       .on("mousemove.tip", (ev, d) => Panel.tipNode(ev, d)).on("mouseleave.tip", Panel.tipHide);
 
     ng.append("rect").attr("x", (d) => d.x0).attr("y", (d) => d.y0).attr("width", (d) => d.x1 - d.x0)
@@ -409,7 +408,7 @@
       .attr("transform", (d) => `translate(0,${yOf.get(d.id)})`)
       .on("mouseenter", (_, d) => highlight(new Set([d.id])))
       .on("mouseleave", () => highlight(null))
-      .on("click", (ev, d) => { ev.stopPropagation(); if (onLabel(ev)) Panel.showItem(d.id); else pin(new Set([d.id])); })
+      .on("click", (ev, d) => { ev.stopPropagation(); if (onLabel(ev)) Panel.toggleItem(d.id); else pin(new Set([d.id])); })
       .on("mousemove.tip", (ev, d) => Panel.tipItem(ev, d)).on("mouseleave.tip", Panel.tipHide);
     r.append("text").attr("x", LW - 8).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "end").attr("class", "lbl")
       .text((d) => (d.name || d.id).slice(0, 30));

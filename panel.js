@@ -138,6 +138,16 @@
     go({ t: "node", dim, value }); A.setPinned(ids); render();
   }
   function close() { sel = null; selHist = []; $("detail").classList.remove("open"); A.setPinned(null); }
+  // Segundo clic sobre la misma etiqueta cierra la ficha; otra etiqueta la reemplaza.
+  const showsItem = (id) => !!sel && sel.t === "item" && sel.id === id;
+  const showsNode = (dim, value) => {
+    if (!sel) return false;
+    const ids = idsOf(dim, value);
+    if (dim === "name" && ids.size === 1) return showsItem([...ids][0]);
+    return sel.t === "node" && sel.dim === dim && sel.value === value;
+  };
+  function toggleItem(id) { if (showsItem(id)) close(); else showItem(id); }
+  function toggleNode(dim, value) { if (showsNode(dim, value)) close(); else showNode(dim, value); }
   function refreshSel() {
     if (!sel) return;
     if (sel.t === "item") { if (!item(sel.id)) return close(); A.setPinned(new Set([sel.id])); }
@@ -328,5 +338,5 @@
     });
   }
 
-  root.Panel = { init, onLoad, back: goBack, showItem, showNode, close, tipItem, tipNode, tipLink, tipHide, place, extra, hasExtra: () => showText.size > 0, descOf, addAuthor, deleteAuthor };
+  root.Panel = { init, onLoad, back: goBack, showItem, showNode, toggleItem, toggleNode, close, tipItem, tipNode, tipLink, tipHide, place, extra, hasExtra: () => showText.size > 0, descOf, addAuthor, deleteAuthor };
 })(typeof window !== "undefined" ? window : globalThis);
