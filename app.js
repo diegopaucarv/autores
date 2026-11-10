@@ -139,8 +139,7 @@
       });
       return sel;
     };
-    const arrow = () => { const s = document.createElement("span"); s.className = "arrow"; s.textContent = "→"; return s; };
-    box.append(mk(0), arrow(), mk(1), arrow(), mk(2, true));
+    box.append(mk(0), mk(1), mk(2, true));
     const cs = document.createElement("select"); cs.title = "Variable de color";
     dims.forEach((d) => { const o = document.createElement("option"); o.value = d.key; o.textContent = d.label; cs.appendChild(o); });
     cs.value = S.colorKey;
@@ -606,6 +605,7 @@
     tlSortOpts();
     const host = d3.select("#timeline"), prev = new Map();
     host.selectAll(".tl-row").each(function (d) { prev.set(d.id, this.__y); });
+    const prevScroll = (host.select(".tl-plot").node() || {}).scrollLeft || 0;
     host.selectAll("*").remove();
     const rows = S.ds.items.filter((i) => i.__life.valid);
     if (!rows.length) { host.append("p").attr("class", "empty").text("Sin ítems con fechas válidas."); return; }
@@ -616,41 +616,54 @@
     rows.sort(tlCmp); if (S.tlDesc) rows.reverse();
     const hostEl = host.node(), CW = hostEl && hostEl.clientWidth;
     const W = Math.max(CHART_MIN, Math.min(CHART_MAX, CW || 1100));
-    const grouped = S.tlSort === S.colorKey && S.tlSort !== "name", RH = 16, T = 30, LW = Math.min(200, Math.max(110, Math.round(W * 0.18))), GAP = 22;
+    const grouped = S.tlSort === S.colorKey && S.tlSort !== "name", RH = 16, T = 30,
+      // La columna de etiquetas es fija: se le da ancho suficiente para que los nombres
+      // truncados a 30 caracteres se lean enteros.
+      LW = Math.min(210, Math.max(170, Math.round(W * 0.18))), GAP = 22;
     const yOf = new Map(), heads = []; let y = T, last;
     rows.forEach((it) => {
       if (grouped && gKey(it) !== last) { last = gKey(it); heads.push({ y, label: last }); y += GAP; }
       yOf.set(it.id, y); y += RH;
     });
     const H = y + 6, start = (i) => i.__life.birth ?? i.__life.activeStart;
-    const x = d3.scaleLinear().domain([d3.min(rows, start), CY]).nice().range([LW, W - 12]);
-    const svg = host.append("svg").attr("viewBox", [0, 0, W, H])
-      .attr("width", W).attr("height", H);
-    svg.append("g").attr("transform", `translate(0,${T - 6})`)
+    // La columna de etiquetas queda fija y sólo el área del gráfico se desplaza en horizontal.
+    const PW = Math.max(420, W - LW);
+    const x = d3.scaleLinear().domain([d3.min(rows, start), CY]).nice().range([26, PW - 12]);
+    const wrap = host.append("div").attr("class", "tl-wrap");
+    const lab = wrap.append("div").attr("class", "tl-labels").style("width", `${LW}px`);
+    const pl = wrap.append("div").attr("class", "tl-plot");
+    const svgL = lab.append("svg").attr("viewBox", [0, 0, LW, H]).attr("width", LW).attr("height", H);
+    const svgP = pl.append("svg").attr("viewBox", [0, 0, PW, H]).attr("width", PW).attr("height", H);
+    svgP.append("g").attr("transform", `translate(0,${T - 6})`)
       .call(d3.axisTop(x).ticks(12).tickFormat((v) => (v < 0 ? -v + " a.C." : String(v))).tickSize(-(H - T)))
       .call((a) => a.selectAll(".tick line").attr("stroke", "#e6e8ec")).call((a) => a.select(".domain").remove());
     const col = (it) => color(gKey(it));
-    const hg = svg.append("g").selectAll("g").data(heads).join("g").attr("transform", (h) => `translate(8,${h.y})`);
+    const hg = svgL.append("g").selectAll("g").data(heads).join("g").attr("transform", (h) => `translate(8,${h.y})`);
     hg.append("rect").attr("y", 3).attr("width", 12).attr("height", 12).attr("rx", 3).attr("fill", (h) => color(h.label));
     hg.append("text").attr("class", "tl-head").attr("x", 20).attr("y", 13).text((h) => h.label);
-    const r = svg.append("g").selectAll("g").data(rows, (d) => d.id).join("g").attr("class", "tl-row")
-      .each(function (d) { this.__y = yOf.get(d.id); })
-      .attr("transform", (d) => `translate(0,${yOf.get(d.id)})`)
+    const wire = (sel) => sel
       .on("mouseenter", (_, d) => highlight(new Set([d.id])))
       .on("mouseleave", () => highlight(null))
       .on("click", (ev, d) => { ev.stopPropagation(); if (onLabel(ev)) Panel.toggleItem(d.id); else pin(new Set([d.id])); })
       .on("mousemove.tip", (ev, d) => Panel.tipItem(ev, d)).on("mouseleave.tip", Panel.tipHide);
-    r.append("text").attr("x", LW - 8).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "end").attr("class", "lbl")
+    const rl = wire(svgL.append("g").selectAll("g").data(rows, (d) => d.id).join("g").attr("class", "tl-row")
+      .each(function (d) { this.__y = yOf.get(d.id); })
+      .attr("transform", (d) => `translate(0,${yOf.get(d.id)})`));
+    rl.append("text").attr("x", LW - 8).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "end").attr("class", "lbl")
       .text((d) => (d.name || d.id).slice(0, 30));
-    r.append("line").attr("x1", (d) => x(start(d))).attr("x2", (d) => x(d.__life.activeEnd)).attr("y1", RH / 2).attr("y2", RH / 2)
+    const rp = wire(svgP.append("g").selectAll("g").data(rows, (d) => d.id).join("g").attr("class", "tl-row")
+      .each(function (d) { this.__y = yOf.get(d.id); })
+      .attr("transform", (d) => `translate(0,${yOf.get(d.id)})`));
+    rp.append("line").attr("x1", (d) => x(start(d))).attr("x2", (d) => x(d.__life.activeEnd)).attr("y1", RH / 2).attr("y2", RH / 2)
       .attr("stroke", col).attr("stroke-width", 1.5).attr("stroke-opacity", (d) => (d.__life.mode === "life" ? 0.6 : 0));
-    r.append("rect").attr("x", (d) => x(d.__life.activeStart)).attr("y", 3).attr("height", RH - 6).attr("rx", 2)
+    rp.append("rect").attr("x", (d) => x(d.__life.activeStart)).attr("y", 3).attr("height", RH - 6).attr("rx", 2)
       .attr("width", (d) => Math.max(2, x(d.__life.activeEnd) - x(d.__life.activeStart)))
       .attr("fill", col).attr("fill-opacity", (d) => (d.__life.alive ? 0.5 : 0.9))
       .attr("stroke", col).attr("stroke-dasharray", (d) => (d.__life.alive ? "4 2" : null));
     if (animate && prev.size && !matchMedia("(prefers-reduced-motion: reduce)").matches)
-      r.attr("transform", (d) => `translate(0,${prev.has(d.id) ? prev.get(d.id) : yOf.get(d.id)})`)
-        .transition().duration(500).attr("transform", (d) => `translate(0,${yOf.get(d.id)})`);
+      [rl, rp].forEach((sel) => sel.attr("transform", (d) => `translate(0,${prev.has(d.id) ? prev.get(d.id) : yOf.get(d.id)})`)
+        .transition().duration(500).attr("transform", (d) => `translate(0,${yOf.get(d.id)})`));
+    if (prevScroll) pl.node().scrollLeft = prevScroll;
     paint();
   }
 

@@ -136,12 +136,6 @@
                 color: var(--ink-3);
                 font-size: var(--t1);
             }
-            .field {
-                display: flex;
-                align-items: center;
-                gap: var(--s2);
-                color: var(--ink-2);
-            }
             .ic {
                 width: 16px;
                 height: 16px;
@@ -378,14 +372,53 @@
                 flex: 0 1 300px;
                 min-width: 0;
             }
-            .panel-head .field select {
-                max-width: 160px;
+
+            /* «Ajustes» ocupa una banda propia a ancho completo, con fondo gris, para
+               que se lea como un bloque importante y no como otro desplegable más. */
+            .panel-head > .config-menu {
+                flex: 1 1 100%;
+                min-width: 0;
             }
-            .panel-head .field input[type="range"] {
-                width: 120px;
+            /* (se sube la especificidad para ganarle a .menu > summary / .menu-pop,
+               que se definen más abajo) */
+            .panel-head > .config-menu > summary {
+                width: 100%;
+                justify-content: space-between;
+                background: var(--rule-soft);
+                font-weight: var(--w2);
             }
-            .config-pop {
-                min-width: 264px;
+            .panel-head > .config-menu[open] > summary {
+                background: var(--accent-wash);
+                border-color: var(--accent);
+            }
+            .panel-head .config-pop {
+                position: static;
+                width: 100%;
+                min-width: 0;
+                max-height: none;
+                overflow: visible;
+                margin-top: var(--s2);
+                padding: var(--s3);
+                background: var(--rule-soft);
+                box-shadow: none;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+                gap: var(--s3);
+                align-items: start;
+            }
+            /* Grupo de controles: rótulo en versalitas sobre una fila de controles.
+               Se usa en «Ajustes» y en la cabecera de la línea de tiempo. */
+            .cfg-group {
+                display: flex;
+                flex-direction: column;
+                gap: var(--s2);
+                min-width: 0;
+            }
+            .cfg-group .menu-label {
+                color: var(--ink-2);
+                font: var(--w2) var(--t0)/1.3 var(--sans);
+                letter-spacing: 0.02em;
+                text-transform: uppercase;
             }
             .config-pop #selectors {
                 flex-direction: column;
@@ -394,33 +427,57 @@
             .config-pop #selectors > select {
                 width: 100%;
             }
-            .config-pop .arrow {
-                display: none;
-            }
-            .config-pop #selectors label,
-            .config-pop .field {
+            .config-pop #selectors label {
                 display: flex;
                 flex-wrap: wrap;
                 align-items: center;
                 justify-content: space-between;
                 gap: var(--s2);
                 width: 100%;
+                min-height: var(--h-sm);
             }
-            .config-pop #selectors label select {
+            .config-pop #selectors label select,
+            .cfg-row select,
+            .cfg-row input[type="range"] {
                 flex: 1 1 auto;
                 min-width: 0;
                 max-width: none;
             }
-            /* El «Orden» de la línea de tiempo, compacto */
-            .field.orden {
+            .cfg-row {
+                display: flex;
+                align-items: center;
+                gap: var(--s2);
+                min-width: 0;
+                min-height: var(--h-sm);
+            }
+            .config-pop #textsel-list {
+                display: flex;
+                flex-direction: column;
+                gap: var(--s1);
+                max-height: 180px;
+                overflow-y: auto;
+                overscroll-behavior-y: contain;
+                scrollbar-color: var(--rule) transparent;
+            }
+            .config-pop #textsel-list label {
+                display: flex;
+                align-items: center;
+                gap: var(--s2);
+                min-height: var(--h-sm);
+                padding: 0 var(--s2);
+                font-size: var(--t1);
+            }
+            /* El «Orden» de la línea de tiempo: una sola fila, compacta */
+            .panel-head > .cfg-row {
                 flex: 0 1 220px;
                 max-width: 220px;
             }
-            .field.orden select {
-                flex: 1 1 auto;
-                min-width: 0;
+            .cfg-label {
+                color: var(--ink-2);
+                white-space: nowrap;
+                cursor: pointer;
             }
-            .field b {
+            .cfg-row b {
                 min-width: 2.2ch;
                 font-variant-numeric: tabular-nums;
                 color: var(--ink);
@@ -441,6 +498,31 @@
                 max-width: none;
                 min-width: var(--chart-min);
                 margin-inline: auto;
+            }
+            /* Línea de tiempo: la columna de etiquetas queda siempre visible y sólo
+               el área del gráfico se desplaza en horizontal. */
+            .gantt {
+                overflow: hidden;
+            }
+            .gantt svg {
+                display: block;
+            }
+            .tl-wrap {
+                display: flex;
+                align-items: stretch;
+            }
+            .tl-labels {
+                flex: 0 0 auto;
+                overflow: hidden;
+                border-right: 1px solid var(--rule-soft);
+            }
+            .tl-plot {
+                flex: 1 1 auto;
+                min-width: 0;
+                overflow-x: auto;
+                overflow-y: hidden;
+                overscroll-behavior: contain;
+                scrollbar-color: var(--rule) transparent;
             }
             .empty {
                 margin: 0;
@@ -927,12 +1009,15 @@
                     flex: 0 0 auto;
                     width: 100%;
                 }
-                .panel-head .field:not(.orden) {
-                    max-width: none;
+                .panel-head .config-pop {
+                    grid-template-columns: 1fr;
                 }
-                .panel-head .field.orden {
+                /* En columna, flex-basis es ALTURA: se anula el 100% del escritorio. */
+                .panel-head > .config-menu {
                     flex: 0 0 auto;
-                    max-width: 220px;
+                }
+                .panel-head > .cfg-row {
+                    flex: 0 0 auto;
                 }
                 #edit-badge {
                     position: static;
@@ -1194,42 +1279,54 @@
                             Ajustes
                         </summary>
                         <div class="menu-pop config-pop">
-                            <div id="selectors"></div>
-                            <label class="field"
-                                >Orden
-                                <select id="sk-sort">
-                                    <option value="value">valor</option>
-                                </select>
-                                <button
-                                    id="sk-dir"
-                                    class="icon"
-                                    type="button"
-                                    aria-label="Invertir orden"
-                                    title="Invertir orden"
+                            <div class="cfg-group">
+                                <span class="menu-label">Columnas</span>
+                                <div id="selectors"></div>
+                            </div>
+                            <div class="cfg-group">
+                                <span class="menu-label">Orden</span>
+                                <div class="cfg-row">
+                                    <select id="sk-sort">
+                                        <option value="value">valor</option>
+                                    </select>
+                                    <button
+                                        id="sk-dir"
+                                        class="icon"
+                                        type="button"
+                                        aria-label="Invertir orden"
+                                        title="Invertir orden"
+                                    >
+                                        <svg class="ic">
+                                            <use href="#i-up" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="cfg-group">
+                                <span class="menu-label">Cohorte</span>
+                                <div class="cfg-row">
+                                    <input
+                                        type="range"
+                                        id="cohort-slider"
+                                        min="10"
+                                        max="100"
+                                        step="5"
+                                        value="50"
+                                        aria-label="Años por cohorte"
+                                    />
+                                    <b id="cohort-val">50</b>
+                                    <span class="muted">años</span>
+                                </div>
+                            </div>
+                            <div class="cfg-group" id="textsel" hidden>
+                                <span class="menu-label"
+                                    >Texto en nodos (<span id="textsel-n"
+                                        >0</span
+                                    >)</span
                                 >
-                                    <svg class="ic"><use href="#i-up" /></svg>
-                                </button>
-                            </label>
-                            <label class="field"
-                                >Cohorte
-                                <input
-                                    type="range"
-                                    id="cohort-slider"
-                                    min="10"
-                                    max="100"
-                                    step="5"
-                                    value="50"
-                                    aria-label="Años por cohorte"
-                                />
-                                <b id="cohort-val">50</b> años</label
-                            >
+                                <div id="textsel-list"></div>
+                            </div>
                         </div>
-                    </details>
-                    <details class="menu" id="textsel" hidden>
-                        <summary>
-                            Texto en nodos (<span id="textsel-n">0</span>)
-                        </summary>
-                        <div class="menu-pop" id="textsel-list"></div>
                     </details>
                 </div>
                 <div class="legend" id="legend"></div>
@@ -1241,8 +1338,8 @@
             <section class="panel" aria-label="Línea de tiempo">
                 <div class="panel-head">
                     <h2>Línea de tiempo</h2>
-                    <label class="field orden"
-                        >Orden
+                    <div class="cfg-row">
+                        <label class="cfg-label" for="tl-sort">Orden</label>
                         <select id="tl-sort">
                             <option value="start">inicio</option>
                         </select>
@@ -1255,13 +1352,13 @@
                         >
                             <svg class="ic"><use href="#i-up" /></svg>
                         </button>
-                    </label>
+                    </div>
                     <span class="muted spacer"
                         >Línea fina: vida · barra: años activos · discontinua:
                         sigue vivo/activo</span
                     >
                 </div>
-                <div class="canvas" id="timeline"></div>
+                <div class="gantt" id="timeline"></div>
             </section>
         </main>
 
