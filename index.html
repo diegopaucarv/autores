@@ -6,7 +6,7 @@
 <title>Explorador de autores</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<script>try{var t=localStorage.getItem("theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){document.documentElement.dataset.theme="light"}</script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600&family=Newsreader:opsz,wght@6..72,600&display=swap" rel="stylesheet">
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
@@ -27,6 +27,7 @@
   --bad:#a3162f;
   --ok:#27693a;
   --ok-wash:#e5f2e9;
+  --on-accent:#fff;
   --shadow-c:rgba(24,33,43,.16);
 }
 :root[data-theme="dark"] { color-scheme:dark;
@@ -44,6 +45,7 @@
   --bad:#ff8a9d;
   --ok:#6cc487;
   --ok-wash:#1a3323;
+  --on-accent:#0a2023;
   --shadow-c:rgba(0,0,0,.55);
 }
 :root {
@@ -94,6 +96,9 @@ button.mini.icon { width:var(--h-sm); padding:0; }
 input[type=range] { accent-color:var(--accent); vertical-align:middle; cursor:pointer; }
 kbd { font:var(--w2) var(--t1) var(--sans); border:1px solid var(--rule); border-radius:var(--r1); padding:0 var(--s1); color:var(--ink-3); }
 .badge { font-weight:var(--w2); color:var(--warn); font-size:var(--t1); }
+.divider { align-self:stretch; width:1px; background:var(--rule); margin:var(--s1) 0; }
+.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+.primary:hover:not(:disabled) { filter:brightness(1.08); background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
 
 /* ===== 4. Layout: un gutter, un ritmo vertical ===== */
 .top { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:var(--s3) var(--s5); padding:var(--s4) var(--gutter); }
@@ -168,6 +173,7 @@ main { display:grid; gap:var(--s4); padding:0 var(--gutter) var(--s5); }
 .sk-link.hot { stroke-opacity:.8; } .sk-link.dim { stroke-opacity:.06; }
 .sk-node.dim, .tl-row.dim { opacity:.2; }
 #tl-dir.desc .ic { transform:rotate(180deg); }
+.lbl-lead { stroke:var(--ink-3); stroke-width:1; opacity:.5; pointer-events:none; }
 
 /* ===== 7. Ficha lateral ===== */
 #detail { position:fixed; inset:0 0 0 auto; width:380px; max-width:100vw; height:100dvh; background:var(--surface); border-left:1px solid var(--rule); box-shadow:var(--pop); padding:var(--s4) var(--s4) var(--s5); overflow:auto; transform:translateX(105%); transition:transform .2s; z-index:50; }
@@ -196,7 +202,7 @@ main { display:grid; gap:var(--s4); padding:0 var(--gutter) var(--s5); }
 #tip.show { opacity:1; } #tip .m { opacity:.7; } #tip .warn { color:var(--warn-wash); }
 
 /* ===== 9. Responsive y movimiento ===== */
-@media (max-width:720px) { .top-tools { width:100%; } .search, .search input { width:100%; } .panel-head .spacer { margin-left:0; } }
+@media (max-width:720px) { .top-tools { width:100%; } .search, .search input { width:100%; } .panel-head .spacer { margin-left:0; } .divider { display:none; } }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none !important; } }
 :root[data-theme="dark"] .ic-moon, :root:not([data-theme="dark"]) .ic-sun { display:none; }
 </style>
@@ -211,27 +217,32 @@ main { display:grid; gap:var(--s4); padding:0 var(--gutter) var(--s5); }
 <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
 <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
 <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/></symbol>
 <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
 <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
 </defs></svg>
 <header class="top">
   <div class="brand">
     <h1>Explorador de autores</h1>
-    <p>Lee <b>.csv</b> y <b>.json</b> de <code>data/</code>. Clic en un nodo o barra fija la selección; clic en el fondo la libera.</p>
+    <p>Lee <b>.csv</b> y <b>.json</b> de <code>data/</code>. Clic en una etiqueta abre la ficha; clic en una forma filtra.</p>
   </div>
   <div class="top-tools">
     <div id="fs"></div>
+    <span class="divider" aria-hidden="true"></span>
+    <button id="add-author" class="primary" type="button" title="Agregar un autor nuevo a la lista"><svg class="ic"><use href="#i-plus"/></svg>Nuevo autor</button>
+    <span class="divider" aria-hidden="true"></span>
     <div class="grp" role="group" aria-label="Vista">
-      <button id="view-back" type="button" title="Volver a la vista anterior (Alt+←)" disabled><svg class="ic"><use href="#i-back"/></svg>Volver</button>
-      <button id="view-reset" type="button" title="Columnas, color, cohorte, orden y búsqueda por defecto"><svg class="ic"><use href="#i-reset"/></svg>Restablecer vista</button>
+      <button id="view-back" class="icon" type="button" title="Volver a la vista anterior (Alt+←)" aria-label="Volver a la vista anterior" disabled><svg class="ic"><use href="#i-back"/></svg></button>
+      <button id="view-reset" class="icon" type="button" title="Restablecer vista (columnas, color, cohorte, orden)" aria-label="Restablecer vista" disabled><svg class="ic"><use href="#i-reset"/></svg></button>
     </div>
     <div class="grp" role="group" aria-label="Edición de datos">
       <button id="undo" class="icon" type="button" title="Deshacer (Ctrl+Z)" aria-label="Deshacer" disabled><svg class="ic"><use href="#i-undo"/></svg></button>
       <button id="redo" class="icon" type="button" title="Rehacer (Ctrl+Y)" aria-label="Rehacer" disabled><svg class="ic"><use href="#i-redo"/></svg></button>
-      <button id="discard" type="button" disabled>Descartar cambios</button>
+      <button id="discard" type="button" title="Descartar todos los cambios de este archivo" disabled>Descartar cambios</button>
       <span class="badge" id="edit-badge"></span>
     </div>
-    <details class="menu"><summary>Exportar</summary>
+    <details class="menu"><summary class="icon" title="Exportar datos" aria-label="Exportar datos"><svg class="ic"><use href="#i-more"/></svg></summary>
       <div class="menu-pop">
         <button id="dl-csv" type="button">Datos en CSV</button>
         <button id="dl-json" type="button">Datos en JSON</button>
