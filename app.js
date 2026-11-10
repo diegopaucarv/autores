@@ -34,6 +34,8 @@
   const LINE_H = 12, LBL_FONT = '600 11px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif';
   const DATE_FONT = '500 9.5px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif';
   const EXTRA_FONT = '400 9px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif';
+  // Ancho mínimo/máximo del lienzo; el mínimo debe coincidir con --chart-min del CSS.
+  const CHART_MIN = 560, CHART_MAX = 1500;
   let _mctx = null;
   function measureCtx() {
     if (!_mctx) { _mctx = document.createElement("canvas").getContext("2d"); _mctx.font = LBL_FONT; }
@@ -240,7 +242,7 @@
     // que coincide con el min-width del CSS: por debajo de ese piso, el panel se desplaza en horizontal
     // en vez de aplastar las etiquetas hasta volverlas ilegibles.
     const CW = host.node() && host.node().clientWidth;
-    const W = Math.max(560, Math.min(1500, CW || 1100));
+    const W = Math.max(CHART_MIN, Math.min(CHART_MAX, CW || 1100));
     const perCol = d3.max(cols, (c) => [...nodes.values()].filter((n) => n.col === c).length);
     const isName = cols.includes("name");
     const rowH = isName ? (Panel.hasExtra() ? 46 : 34) : 22;
@@ -511,8 +513,10 @@
     if (needH > BOTTOM) { H += Math.ceil(needH); g = layout(H); placeLabels(g); }
     syncLinks(g);
 
-    const svg = host.append("svg").attr("viewBox", [0, 0, W, H]).attr("width", "100%")
-      .style("aspect-ratio", `${W} / ${H}`).attr("role", "img");
+    // Tamaño natural 1:1: las etiquetas conservan sus 11px reales y el panel se
+    // desplaza en horizontal cuando el SVG es más ancho que su contenedor.
+    const svg = host.append("svg").attr("viewBox", [0, 0, W, H])
+      .attr("width", W).attr("height", H).attr("role", "img");
     cols.forEach((c) => {
       const ns = g.nodes.filter((n) => n.col === c); if (!ns.length) return;
       const dm = S.ds.dimensions.find((d) => d.key === c), first = c === cols[0];
@@ -610,7 +614,7 @@
     gOrd = (it) => (ord.has(gVal(it)) ? ord.get(gVal(it)) : 1e6);
     rows.sort(tlCmp); if (S.tlDesc) rows.reverse();
     const hostEl = host.node(), CW = hostEl && hostEl.clientWidth;
-    const W = Math.max(560, Math.min(1500, CW || 1100));
+    const W = Math.max(CHART_MIN, Math.min(CHART_MAX, CW || 1100));
     const grouped = S.tlSort === S.colorKey && S.tlSort !== "name", RH = 16, T = 30, LW = Math.min(200, Math.max(110, Math.round(W * 0.18))), GAP = 22;
     const yOf = new Map(), heads = []; let y = T, last;
     rows.forEach((it) => {
@@ -619,7 +623,8 @@
     });
     const H = y + 6, start = (i) => i.__life.birth ?? i.__life.activeStart;
     const x = d3.scaleLinear().domain([d3.min(rows, start), CY]).nice().range([LW, W - 12]);
-    const svg = host.append("svg").attr("viewBox", [0, 0, W, H]).attr("width", "100%").style("aspect-ratio", `${W} / ${H}`);
+    const svg = host.append("svg").attr("viewBox", [0, 0, W, H])
+      .attr("width", W).attr("height", H);
     svg.append("g").attr("transform", `translate(0,${T - 6})`)
       .call(d3.axisTop(x).ticks(12).tickFormat((v) => (v < 0 ? -v + " a.C." : String(v))).tickSize(-(H - T)))
       .call((a) => a.selectAll(".tick line").attr("stroke", "#e6e8ec")).call((a) => a.select(".domain").remove());
