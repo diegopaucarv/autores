@@ -131,13 +131,25 @@
     if (!prev) return false;
     sel = prev; A.setPinned(sel.t === "item" ? new Set([sel.id]) : idsOf(sel.dim, sel.value)); render(); return true;
   }
-  function showItem(id) { go({ t: "item", id }); A.setPinned(new Set([id])); render(); }
+  function showItem(id) { restoreFocus = document.activeElement; go({ t: "item", id }); A.setPinned(new Set([id])); render(); }
   function showNode(dim, value) {
     const ids = idsOf(dim, value);
     if (dim === "name" && ids.size === 1) return showItem([...ids][0]);
-    go({ t: "node", dim, value }); A.setPinned(ids); render();
+    restoreFocus = document.activeElement; go({ t: "node", dim, value }); A.setPinned(ids); render();
   }
-  function close() { sel = null; selHist = []; $("detail").classList.remove("open"); A.setPinned(null); }
+  let restoreFocus = null;
+  function setInspector(open) {
+    const box = $("detail"), backdrop = $("detail-backdrop");
+    box.classList.toggle("open", open); box.setAttribute("aria-hidden", String(!open));
+    backdrop.classList.toggle("open", open);
+    document.body.classList.toggle("inspector-open", open);
+  }
+  function close() {
+    const previous = restoreFocus;
+    sel = null; selHist = []; setInspector(false); A.setPinned(null);
+    if (previous && document.contains(previous)) requestAnimationFrame(() => previous.focus());
+    restoreFocus = null;
+  }
   // Segundo clic sobre la misma etiqueta cierra la ficha; otra etiqueta la reemplaza.
   const showsItem = (id) => !!sel && sel.t === "item" && sel.id === id;
   const showsNode = (dim, value) => {
@@ -154,7 +166,15 @@
     else A.setPinned(idsOf(sel.dim, sel.value));
     render();
   }
-  function render() { $("detail").classList.add("open"); sel.t === "item" ? renderItem() : renderNode(); wire(); }
+  function render() {
+    setInspector(true);
+    const closeButton = `<button type="button" class="iconbtn" data-act="close" aria-label="Cerrar detalle">×</button>`;
+    sel.t === "item" ? renderItem() : renderNode();
+    const heading = $("detail").querySelector("h2");
+    if (heading && !heading.previousElementSibling?.matches("[data-act=close]")) heading.insertAdjacentHTML("beforebegin", closeButton);
+    wire();
+    requestAnimationFrame(() => $("detail").querySelector("[data-act=close]")?.focus());
+  }
 
   function lifeText(it) {
     const L = it.__life || {};
@@ -190,7 +210,7 @@
     const members = S.ds.items.filter((i) => ids.has(i.id)).sort((a, b) => nameOf(a).localeCompare(nameOf(b), "es"));
     $("detail").innerHTML = `${headBar(false)}
       <div class="sub">${esc(d ? d.label : sel.dim)}</div>
-      <h2><i class="dot" style="background:${A.color()(sel.value)}"></i>${esc(sel.value)}</h2>
+      <h2 id="detail-title"><i class="dot" style="background:${A.color()(sel.value)}"></i>${esc(sel.value)}</h2>
       <div class="sub">${ids.size} ítem(s)</div>
       <div class="fld"><label>Descripción de la categoría</label>
         <textarea data-desc rows="5" placeholder="Qué significa, criterios de pertenencia…">${esc(descOf(sel.dim, sel.value))}</textarea></div>
@@ -200,6 +220,7 @@
 
   function wire() {
     const box = $("detail");
+    $("detail-backdrop").onclick = close;
     box.querySelectorAll("[data-f]").forEach((el) => el.addEventListener("change", () => onField(el)));
     box.querySelectorAll("[data-new]").forEach((b) => b.addEventListener("click", () => {
       const v = prompt("Nueva categoría para «" + ((dimOf(b.dataset.new) || {}).label || b.dataset.new) + "»");
@@ -331,6 +352,7 @@
     $("meta-in").addEventListener("change", (e) => { if (e.target.files[0]) importMeta(e.target.files[0]); e.target.value = ""; });
     document.addEventListener("keydown", (e) => {
       const typing = /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ""));
+      if (e.key === "Escape" && document.querySelector("#detail.open")) { e.preventDefault(); close(); return; }
       if (e.key === "Escape" && sel) close();
       if (typing || !(e.ctrlKey || e.metaKey)) return;
       if (e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }

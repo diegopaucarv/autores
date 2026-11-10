@@ -88,8 +88,10 @@
                 --r1: 4px;
                 --r2: 8px;
                 --rp: 99px;
-                --h: 32px;
-                --h-sm: 28px;
+                --h: 36px;
+                --h-sm: 32px;
+                --chart-min: 560px;
+                --sheet-radius: 16px;
             }
             @media (max-width: 720px) {
                 :root {
@@ -102,6 +104,10 @@
             *::before,
             *::after {
                 box-sizing: border-box;
+            }
+            html,
+            body {
+                overflow-x: hidden;
             }
             body {
                 margin: 0;
@@ -366,7 +372,8 @@
                 display: block;
                 width: 100%;
                 height: auto;
-                min-width: 560px;
+                min-width: var(--chart-min);
+                scrollbar-color: var(--rule) transparent;
             }
             #timeline {
                 max-height: 560px;
@@ -624,6 +631,19 @@
             }
 
             /* ===== 7. Ficha lateral ===== */
+            #detail-backdrop {
+                position: fixed;
+                inset: 0;
+                z-index: 49;
+                background: color-mix(in srgb, var(--ink) 28%, transparent);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s;
+            }
+            #detail-backdrop.open {
+                opacity: 1;
+                pointer-events: auto;
+            }
             #detail {
                 position: fixed;
                 inset: 0 0 0 auto;
@@ -638,6 +658,7 @@
                 transform: translateX(105%);
                 transition: transform 0.2s;
                 z-index: 50;
+                overscroll-behavior: contain;
             }
             #detail.open {
                 transform: none;
@@ -678,15 +699,9 @@
                 padding-left: var(--s3);
             }
             #detail .sub {
-                color: var(--ink-3);
-                margin-bottom: var(--s1);
-            }
-            #detail .fld {
-                margin: var(--s3) 0;
-            }
-            #detail .fld label {
-                display: block;
+                color: var(--muted);
                 font-size: var(--t1);
+                padding-right: 44px;
                 font-weight: var(--w2);
                 color: var(--ink-2);
                 margin-bottom: var(--s1);
@@ -782,8 +797,23 @@
                 }
             }
             @media (max-width: 720px) {
+                .top {
+                    gap: var(--s2);
+                }
                 .top-tools {
                     width: 100%;
+                    display: grid;
+                    grid-template-columns: minmax(0, 1fr) auto auto;
+                    align-items: center;
+                    gap: var(--s2);
+                }
+                .top-tools .fs,
+                .top-tools #fs {
+                    grid-column: 1 / -1;
+                    width: 100%;
+                }
+                .top-tools .grp {
+                    justify-content: flex-start;
                 }
                 .search,
                 .search input {
@@ -802,7 +832,17 @@
                 }
                 #detail {
                     width: 100vw;
-                    padding: var(--gutter) var(--gutter) var(--s5);
+                    border-left: 0;
+                    border-top: 1px solid var(--rule);
+                    border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+                    padding: var(--gutter) var(--gutter) calc(var(--s5) + env(safe-area-inset-bottom));
+                    transform: translateY(105%);
+                }
+                #detail.open {
+                    transform: none;
+                }
+                #detail-backdrop {
+                    background: color-mix(in srgb, var(--ink) 42%, transparent);
                 }
                 #detail .row2 {
                     flex-direction: column;
@@ -985,8 +1025,9 @@
                     >
                         <svg class="ic"><use href="#i-more" /></svg>
                     </summary>
-                    <div class="menu-pop">
-                        <button id="dl-csv" type="button">Datos en CSV</button>
+                    <div class="menu-pop" role="menu">
+                        <span class="menu-label">Exportar</span>
+                        <button id="dl-csv" type="button" role="menuitem">Datos en CSV</button>
                         <button id="dl-json" type="button">
                             Datos en JSON
                         </button>
@@ -1106,8 +1147,9 @@
             </section>
         </main>
 
-        <aside id="detail" aria-live="polite"></aside>
-        <div id="tip"></div>
+        <div id="detail-backdrop" aria-hidden="true"></div>
+        <aside id="detail" role="dialog" aria-modal="true" aria-labelledby="detail-title" aria-hidden="true"></aside>
+        <div id="tip" role="status" aria-live="polite"></div>
 
         <script src="data.js"></script>
         <script src="dataset.js"></script>
