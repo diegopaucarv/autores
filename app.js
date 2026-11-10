@@ -31,7 +31,7 @@
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   /* ---------- medición de texto para ajuste de etiquetas (Sankey) ---------- */
-  const LINE_H = 13, LBL_FONT = '600 12px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif';
+  const LINE_H = 12, LBL_FONT = '600 11px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif';
   const DATE_FONT = '500 9.5px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif';
   const EXTRA_FONT = '400 9px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif';
   let _mctx = null;
@@ -239,7 +239,7 @@
     const W = 1100, perCol = d3.max(cols, (c) => [...nodes.values()].filter((n) => n.col === c).length);
     const isName = cols.includes("name");
     const rowH = isName ? (Panel.hasExtra() ? 46 : 34) : 22;
-    const MARGIN = 170, TOP = 30, BOTTOM = 8, NODE_PAD = 8, LABEL_GAP = 3;
+    const MARGIN = 170, TOP = 30, BOTTOM = 8, NODE_PAD = 12, LABEL_GAP = 4;
 
     // --- posiciones X aproximadas por columna (antes del layout) para dimensionar las etiquetas ---
     const colStep = cols.length > 1 ? (W - 2 * MARGIN) / (cols.length - 1) : 0;
@@ -253,7 +253,7 @@
       const nextX0 = idx + 1 < cols.length ? approxX0(idx + 1) : null;
       let availW = first ? (x0 - 10) : (nextX0 != null ? nextX0 - 14 - labelX : (W - 10) - labelX);
       availW = Math.max(70, Math.min(260, availW));
-      n.__lines = wrapLabel(n.label, availW, 2).map((ln) => fitText(ln, availW));
+      n.__lines = wrapLabel(n.label, availW, 1).map((ln) => fitText(ln, availW)); // una sola línea (la ficha muestra el resto)
       n.__availW = availW;
       n.__anchor = first ? "end" : "start";
       let extraLines = nameCol ? 1 + (Panel.hasExtra() ? 1 : 0) : 0;
