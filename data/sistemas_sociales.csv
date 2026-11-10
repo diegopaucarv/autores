@@ -154,15 +154,14 @@ grupo,nombre,país,continente,nacimiento,muerte,concepto_clave,obra_emblemática
 "1. Modelado Basado en Agentes y Ciencias Sociales Generativas",Paul W. Glimcher,Estados Unidos,Norteamérica,1961,presente,"Neuroeconomía; utilidad subjetiva; circuitos orbitofrontales","Foundations of Neuroeconomic Analysis (2011)",H
 "1. Modelado Basado en Agentes y Ciencias Sociales Generativas",Colin Camerer,Estados Unidos,Norteamérica,1959,presente,"Neuroeconomía; juegos estratégicos; equidad","Behavioral Game Theory (2003)",H
 "1. Modelado Basado en Agentes y Ciencias Sociales Generativas",Ernst Fehr,Suiza,Europa,1956,presente,"Neuroeconomía; reciprocidad fuerte; preferencias sociales","Neuroeconomics (2008, coeditado)",H
-"1. Modelado Basado en Agentes y Ciencias Sociales Generativas",Karl Friston,Reino Unido,Europa,1959,presente,"Principio de energía libre; inferencia activa; Markov blankets","Active Inference (2022)",H
+"5. Enfoques Dialécticos y Causalidad Emergente",Karl Friston,Reino Unido,Europa,1959,presente,"Principio de energía libre; inferencia activa; Markov blankets","Active Inference (2022)",H
 "1. Modelado Basado en Agentes y Ciencias Sociales Generativas",Ron Sun,China / Estados Unidos,Asia / Norteamérica,1960,presente,"Arquitectura cognitiva CLARION; micro-macro","Duality of the Mind (2002)",H
 "1. Modelado Basado en Agentes y Ciencias Sociales Generativas",Johannes Haushofer,Alemania / Estados Unidos,Europa / Norteamérica,1978,presente,"Neurociencia de la escasez; pobreza y cognición","The Behavioral Economics of Poverty (2014)",H
-"3. Sociodinámica y Física Social",Michel Callon,Francia,Europa,1945,2025,"Teoría del Actor-Red (ANT); agencia distribuida; simetría generalizada","Actor Network Theory (con Bruno Latour)",H
-"3. Sociodinámica y Física Social",Harrison C. White,Estados Unidos,Norteamérica,1930,2024,"Redes sociales; identidad y control; modelos matemáticos de estructura social","Identity and Control (1992)",H
-"3. Sociodinámica y Física Social",Fritjof Capra,Austria / Estados Unidos,Europa / Norteamérica,1939,presente,"La trama de la vida; sistemas complejos; ecología profunda","The Web of Life (1996)",H
-"3. Sociodinámica y Física Social",Armin Fuchs,Alemania,Europa,1965,presente,"Dinámica no lineal; flujo de fase; modelo Excitator","Nonlinear Dynamics of Human Behavior (2008)",H
-"3. Sociodinámica y Física Social",Raoul Huys,Bélgica,Europa,1976,presente,"Transiciones topológicas de fase; ley de Fitts","Nonlinear Dynamics of Human Behavior (2008)",H
-"3. Sociodinámica y Física Social",Viktor K. Jirsa,Alemania,Europa,1968,presente,"Modelo Excitator; neurodinámica; espacio de estados","Nonlinear Dynamics of Human Behavior (2008)",H
+"1. Modelado Basado en Agentes y Ciencias Sociales Generativas",Harrison C. White,Estados Unidos,Norteamérica,1930,2024,"Redes sociales; identidad y control; modelos matemáticos de estructura social","Identity and Control (1992)",HWeb
+"4. Sistemas Autopoiéticos y Teoría General de Sistemas",Fritjof Capra,Austria / Estados Unidos,Europa / Norteamérica,1939,presente,"La trama de la vida; sistemas complejos; ecología profunda","The Web of Life (1996)",H
+"1. Modelado Basado en Agentes y Ciencias Sociales Generativas",Armin Fuchs,Alemania,Europa,1965,presente,"Dinámica no lineal; flujo de fase; modelo Excitator","Nonlinear Dynamics in Human Behavior (2011)",H
+"1. Modelado Basado en Agentes y Ciencias Sociales Generativas",Raoul Huys,Bélgica,Europa,1976,presente,"Transiciones topológicas de fase; ley de Fitts","Nonlinear Dynamics in Human Behavior (2011)",H
+"1. Modelado Basado en Agentes y Ciencias Sociales Generativas",Viktor K. Jirsa,Alemania,Europa,1968,presente,"Modelo Excitator; neurodinámica; espacio de estados","Nonlinear Dynamics in Human Behavior (2011)",H
 "4. Sistemas Autopoiéticos y Teoría General de Sistemas",Wolfgang Hofkirchner,Austria,Europa,1953,presente,"Teoría Unificada de la Información (UTI); auto-organización social","The Unified Theory of Information (2013)",H
 "4. Sistemas Autopoiéticos y Teoría General de Sistemas",Claude Shannon,Estados Unidos,Norteamérica,1916,2001,"Teoría matemática de la comunicación; entropía de información","A Mathematical Theory of Communication (1948)",H
 "4. Sistemas Autopoiéticos y Teoría General de Sistemas",Warren Weaver,Estados Unidos,Norteamérica,1894,1978,"Teoría matemática de la comunicación; complejidad organizada","A Mathematical Theory of Communication (1949, con Shannon)",H
@@ -173,7 +172,7 @@ grupo,nombre,país,continente,nacimiento,muerte,concepto_clave,obra_emblemática
 "4. Sistemas Autopoiéticos y Teoría General de Sistemas",Umberto Eco,Italia,Europa,1932,2016,"Semiótica; semiose ilimitada; códigos culturales","A Theory of Semiotics (1976)",H
 "4. Sistemas Autopoiéticos y Teoría General de Sistemas",Yuri Lotman,Rusia / Estonia,Europa,1922,1993,"Semiosfera; memoria cultural; fronteras semióticas","Universe of the Mind (1990)",H
 "4. Sistemas Autopoiéticos y Teoría General de Sistemas",Tom Stonier,Reino Unido,Europa,1927,1999,"Teoría universal de la información; organización societal","Information and the Internal Structure of the Universe (1990)",H
-"4. Sistemas Autopoiéticos y Teoría General de Sistemas",Brian Castellani,Estados Unidos,Norteamérica,1970,presente,"Sociología de la complejidad; modelado computacional integrativo","The Atlas of Social Complexity (2024, con Gerrits)",H
+"1. Modelado Basado en Agentes y Ciencias Sociales Generativas",Brian Castellani,Estados Unidos,Norteamérica,1970,presente,"Sociología de la complejidad; modelado computacional integrativo","The Atlas of Social Complexity (2024, con Gerrits)",H
 "4. Sistemas Autopoiéticos y Teoría General de Sistemas",Lasse Gerrits,Países Bajos,Europa,1978,presente,"Sociología de la complejidad; sistemas no lineales","The Atlas of Social Complexity (2024, con Castellani)",H
 "5. Enfoques Dialécticos y Causalidad Emergente",Ansgar Beckermann,Alemania,Europa,1945,presente,"Fisicalismo no reductivo; emergentismo; superveniencia","Emergence or Reduction? (1992, coeditado)",H
 "5. Enfoques Dialécticos y Causalidad Emergente",Hans Flohr,Alemania,Europa,1936,presente,"Teoría emergentista de la conciencia; neurobiología","Emergence or Reduction? (1992, coeditado)",H
@@ -191,8 +190,8 @@ grupo,nombre,país,continente,nacimiento,muerte,concepto_clave,obra_emblemática
 "5. Enfoques Dialécticos y Causalidad Emergente",W. G. Runciman,Reino Unido,Europa,1934,presente,"Estratificación weberiana evolutiva; privación relativa","A Treatise on Social Theory (1983-1997)",H
 "5. Enfoques Dialécticos y Causalidad Emergente",Kingsley Davis,Estados Unidos,Norteamérica,1908,1997,"Funcionalismo de la estratificación; recompensas diferenciales","Some Principles of Stratification (1945, con Moore)",H
 "5. Enfoques Dialécticos y Causalidad Emergente",Wilbert E. Moore,Estados Unidos,Norteamérica,1914,1987,"Funcionalismo de la estratificación; movilidad ocupacional","Some Principles of Stratification (1945, con Davis)",H
-"5. Enfoques Dialécticos y Causalidad Emergente",Talcott Parsons,Estados Unidos,Norteamérica,1902,1979,"Modelo AGIL; estratificación multidimensional; sistema de acción","The Social System (1951)",H
-"5. Enfoques Dialécticos y Causalidad Emergente",James S. Coleman,Estados Unidos,Norteamérica,1926,1995,"Bote de Coleman; capital social; elección racional","Foundations of Social Theory (1990)",H
+"4. Sistemas Autopoiéticos y Teoría General de Sistemas",Talcott Parsons,Estados Unidos,Norteamérica,1902,1979,"Modelo AGIL; estratificación multidimensional; sistema de acción","The Social System (1951)",H
+"1. Modelado Basado en Agentes y Ciencias Sociales Generativas",James S. Coleman,Estados Unidos,Norteamérica,1926,1995,"Bote de Coleman; capital social; elección racional","Foundations of Social Theory (1990)",H
 "5. Enfoques Dialécticos y Causalidad Emergente",Raymond Boudon,Francia,Europa,1934,2013,"Teoría estructural generativa; efectos perversos","La logique du social (1979)",H
 "5. Enfoques Dialécticos y Causalidad Emergente",Aage B. Sørensen,Dinamarca / Estados Unidos,Europa / Norteamérica,1941,2001,"Rent-seeking estructural; matching puesto-persona","The Structural Basis of Social Inequality (1996)",H
 "5. Enfoques Dialécticos y Causalidad Emergente",Bruce G. Link,Estados Unidos,Norteamérica,1949,presente,"Teoría de las causas fundamentales; salud y estatus","Social Conditions as Fundamental Causes of Disease (1995)",H
@@ -215,7 +214,7 @@ grupo,nombre,país,continente,nacimiento,muerte,concepto_clave,obra_emblemática
 "5. Enfoques Dialécticos y Causalidad Emergente",Clem Brooks,Estados Unidos,Norteamérica,1960,presente,"Persistencia de clases; comportamiento político","The Persistence of Classes (1993)",H
 "5. Enfoques Dialécticos y Causalidad Emergente",Jeff Manza,Estados Unidos,Norteamérica,1962,presente,"Persistencia de clases; voto de clase","The Persistence of Classes (1993)",H
 "8. Análisis de Sistemas-Mundo y Ecología-Mundo",Shmuel Noah Eisenstadt,Polonia / Israel,Europa / Asia,1923,2010,"Multiple Modernities; análisis civilizatorio; élites y heterodoxias","Multiple Modernities (2000)",H
-"8. Análisis de Sistemas-Mundo y Ecología-Mundo",Michael Mann,Reino Unido / Estados Unidos,Europa / Norteamérica,1942,presente,"Modelo IEMP; redes de poder; formación del Estado","The Sources of Social Power (1986-2012)",H
+"5. Enfoques Dialécticos y Causalidad Emergente",Michael Mann,Reino Unido / Estados Unidos,Norteamérica,1942,presente,"Modelo IEMP; redes de poder; formación del Estado","The Sources of Social Power (1986-2012)",H
 "8. Análisis de Sistemas-Mundo y Ecología-Mundo",Thomas D. Hall,Estados Unidos,Norteamérica,1951,presente,"Sistemas-mundo comparativos; pulsación y ciclos","Rise and Demise (1997)",H
 "8. Análisis de Sistemas-Mundo y Ecología-Mundo",Andre Gunder Frank,Alemania / Estados Unidos,Europa / Norteamérica,1929,2005,"Sistema-mundo de 5.000 años; ciclos A/B; acumulación continua","ReORIENT (1998)",H
 "8. Análisis de Sistemas-Mundo y Ecología-Mundo",Barry K. Gills,Reino Unido / Finlandia,Europa,1956,presente,"Sistema-mundo de 5.000 años; ciclos hegemónicos","The World System (1993, con Frank)",H
@@ -224,7 +223,7 @@ grupo,nombre,país,continente,nacimiento,muerte,concepto_clave,obra_emblemática
 "8. Análisis de Sistemas-Mundo y Ecología-Mundo",Joseph Tainter,Estados Unidos,Norteamérica,1949,presente,"Colapso por rendimientos decrecientes de la complejidad","The Collapse of Complex Societies (1988)",H
 "8. Análisis de Sistemas-Mundo y Ecología-Mundo",Nikolai Kondratieff,Rusia,Europa,1892,1938,"Ondas largas económicas; ciclos de 50-60 años","The Long Waves in Economic Life (1925)",H
 "8. Análisis de Sistemas-Mundo y Ecología-Mundo",Göran Therborn,Suecia,Europa,1941,presente,"Regímenes globales de desigualdad; campos de exterminio de la desigualdad","The Killing Fields of Inequality (2013)",H
-"8. Análisis de Sistemas-Mundo y Ecología-Mundo",Thomas Piketty,Francia,Europa,1971,presente,"r > g; capital e ideología; regímenes de propiedad","Capital in the Twenty-First Century (2013)",H
+"5. Enfoques Dialécticos y Causalidad Emergente",Thomas Piketty,Francia,Europa,1971,presente,"r > g; capital e ideología; regímenes de propiedad","Capital and Ideology (2019)",H
 "8. Análisis de Sistemas-Mundo y Ecología-Mundo",Peter Turchin,Rusia / Estados Unidos,Europa / Norteamérica,1957,presente,"Cliodinámica; colapso imperial; asabiyyah cuantitativa","Ultrasociety (2015)",H
 "8. Análisis de Sistemas-Mundo y Ecología-Mundo",Robert N. Bellah,Estados Unidos,Norteamérica,1927,2013,"Evolución religiosa; era axial; religión civil","Religion in Human Evolution (2011)",H
 "8. Análisis de Sistemas-Mundo y Ecología-Mundo",Arnold J. Toynbee,Reino Unido,Europa,1889,1975,"Auge y caída de civilizaciones; reto y respuesta","A Study of History (1934-1961)",H
