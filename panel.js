@@ -147,7 +147,7 @@
   function close() {
     const previous = restoreFocus;
     sel = null; selHist = []; setInspector(false); A.setPinned(null);
-    if (previous && document.contains(previous)) requestAnimationFrame(() => previous.focus());
+    if (previous && document.contains(previous)) requestAnimationFrame(() => previous.focus({ preventScroll: true }));
     restoreFocus = null;
   }
   // Segundo clic sobre la misma etiqueta cierra la ficha; otra etiqueta la reemplaza.
@@ -173,7 +173,7 @@
     const heading = $("detail").querySelector("h2");
     if (heading && !heading.previousElementSibling?.matches("[data-act=close]")) heading.insertAdjacentHTML("beforebegin", closeButton);
     wire();
-    requestAnimationFrame(() => $("detail").querySelector("[data-act=close]")?.focus());
+    requestAnimationFrame(() => $("detail").querySelector("[data-act=close]")?.focus({ preventScroll: true }));
   }
 
   function lifeText(it) {

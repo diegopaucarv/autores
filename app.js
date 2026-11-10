@@ -200,7 +200,11 @@
 
   /* ---------- Sankey ---------- */
   function renderSankey() {
-    const host = d3.select("#sankey"); host.selectAll("*").remove();
+    const host = d3.select("#sankey");
+    // El ancho se mide ANTES de vaciar el panel: leerlo con el panel vacío fuerza un
+    // reflujo con la página encogida y el navegador reajusta el scroll (la vista salta arriba).
+    const CW = host.node() && host.node().clientWidth;
+    host.selectAll("*").remove();
     const cols = S.cols.filter(Boolean), items = S.ds.items;
     if (cols.length < 2) return;
 
@@ -241,7 +245,6 @@
     // El ancho interno sigue el ancho real del contenedor (se adapta al visor/ventana), con un piso
     // que coincide con el min-width del CSS: por debajo de ese piso, el panel se desplaza en horizontal
     // en vez de aplastar las etiquetas hasta volverlas ilegibles.
-    const CW = host.node() && host.node().clientWidth;
     const W = Math.max(CHART_MIN, Math.min(CHART_MAX, CW || 1100));
     const perCol = d3.max(cols, (c) => [...nodes.values()].filter((n) => n.col === c).length);
     const isName = cols.includes("name");
@@ -606,6 +609,9 @@
     const host = d3.select("#timeline"), prev = new Map();
     host.selectAll(".tl-row").each(function (d) { prev.set(d.id, this.__y); });
     const prevScroll = (host.select(".tl-plot").node() || {}).scrollLeft || 0;
+    // Igual que en el Sankey: medir antes de vaciar, para no forzar un reflujo con el
+    // panel vacío que encoja la página y haga saltar el scroll.
+    const hostEl = host.node(), CW = hostEl && hostEl.clientWidth;
     host.selectAll("*").remove();
     const rows = S.ds.items.filter((i) => i.__life.valid);
     if (!rows.length) { host.append("p").attr("class", "empty").text("Sin ítems con fechas válidas."); return; }
@@ -614,7 +620,6 @@
     gVal = (it) => vals(it, dimKey)[0];
     gOrd = (it) => (ord.has(gVal(it)) ? ord.get(gVal(it)) : 1e6);
     rows.sort(tlCmp); if (S.tlDesc) rows.reverse();
-    const hostEl = host.node(), CW = hostEl && hostEl.clientWidth;
     const W = Math.max(CHART_MIN, Math.min(CHART_MAX, CW || 1100));
     const grouped = S.tlSort === S.colorKey && S.tlSort !== "name", RH = 16, T = 30,
       // La columna de etiquetas es fija: se le da ancho suficiente para que los nombres
