@@ -108,9 +108,11 @@ main { display:grid; gap:var(--s4); padding:0 var(--gutter) var(--s5); }
 .brand p { margin:var(--s1) 0 0; color:var(--ink-3); font-size:var(--t1); max-width:60ch; }
 .top-tools { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s2) var(--s4); }
 .grp { display:flex; align-items:center; gap:var(--s1); }
-.fs { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s2); }
-.fs label { display:flex; align-items:center; gap:var(--s2); color:var(--ink-2); }
+.fs label { display:flex; align-items:center; gap:var(--s2); color:var(--ink-2); width:100%; }
+.fs label select { flex:1; }
 .fs-msg { color:var(--ink-3); font-size:var(--t1); }
+.fs-cur { max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#fs-menu .menu-pop { min-width:240px; }
 
 /* ===== 5. Paneles ===== */
 .panel { background:var(--surface); border:1px solid var(--rule); border-radius:var(--r2); }
@@ -230,7 +232,7 @@ main { display:grid; gap:var(--s4); padding:0 var(--gutter) var(--s5); }
   <div class="top-tools">
     <div id="fs"></div>
     <span class="divider" aria-hidden="true"></span>
-    <button id="add-author" class="primary" type="button" title="Agregar un autor nuevo a la lista"><svg class="ic"><use href="#i-plus"/></svg>Nuevo autor</button>
+    <button id="add-author" class="primary" type="button" title="Agregar un autor nuevo a la lista" disabled><svg class="ic"><use href="#i-plus"/></svg>Nuevo autor</button>
     <span class="divider" aria-hidden="true"></span>
     <div class="grp" role="group" aria-label="Vista">
       <button id="view-back" class="icon" type="button" title="Volver a la vista anterior (Alt+←)" aria-label="Volver a la vista anterior" disabled><svg class="ic"><use href="#i-back"/></svg></button>
@@ -239,7 +241,7 @@ main { display:grid; gap:var(--s4); padding:0 var(--gutter) var(--s5); }
     <div class="grp" role="group" aria-label="Edición de datos">
       <button id="undo" class="icon" type="button" title="Deshacer (Ctrl+Z)" aria-label="Deshacer" disabled><svg class="ic"><use href="#i-undo"/></svg></button>
       <button id="redo" class="icon" type="button" title="Rehacer (Ctrl+Y)" aria-label="Rehacer" disabled><svg class="ic"><use href="#i-redo"/></svg></button>
-      <button id="discard" type="button" title="Descartar todos los cambios de este archivo" disabled>Descartar cambios</button>
+      <button id="discard" class="icon" type="button" title="Descartar todos los cambios de este archivo (autores añadidos y eliminados incluidos)" aria-label="Descartar todos los cambios" disabled><svg class="ic"><use href="#i-trash"/></svg></button>
       <span class="badge" id="edit-badge"></span>
     </div>
     <details class="menu"><summary class="icon" title="Exportar datos" aria-label="Exportar datos"><svg class="ic"><use href="#i-more"/></svg></summary>

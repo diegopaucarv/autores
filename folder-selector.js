@@ -1,4 +1,4 @@
-/* folder-selector.js — selector de archivos .csv/.json de una carpeta */
+/* folder-selector.js — selector de archivos .csv/.json de una carpeta, como menú compacto */
 (function (root) {
   "use strict";
   const EXT = /\.(csv|json)$/i;
@@ -8,23 +8,34 @@
     const wrap = document.createElement("div");
     wrap.className = "fs";
     wrap.innerHTML = `
-      <label>Dataset <select aria-label="Archivo de datos"></select></label>
-      <button type="button" class="icon" data-act="reload" title="Volver a listar ${dataDir}" aria-label="Recargar lista"><svg class="ic"><use href="#i-reload"/></svg></button>
-      <button type="button" data-act="folder">Carpeta…</button>
-      <button type="button" data-act="files">Archivo…</button>
-      <span class="fs-msg"></span>
+      <details class="menu" id="fs-menu">
+        <summary title="Elegir archivo de datos" aria-label="Elegir archivo de datos">
+          <svg class="ic"><use href="#i-reload"/></svg><span class="fs-cur">Elegir dataset…</span>
+        </summary>
+        <div class="menu-pop">
+          <label>Dataset <select aria-label="Archivo de datos"></select></label>
+          <button type="button" data-act="reload" title="Volver a listar ${dataDir}"><svg class="ic"><use href="#i-reload"/></svg>Recargar lista</button>
+          <button type="button" data-act="folder"><svg class="ic"><use href="#i-plus"/></svg>Carpeta…</button>
+          <button type="button" data-act="files"><svg class="ic"><use href="#i-plus"/></svg>Archivo…</button>
+          <span class="fs-msg"></span>
+        </div>
+      </details>
       <input type="file" accept=".csv,.json,text/csv,application/json" multiple hidden data-in="files">
       <input type="file" webkitdirectory multiple hidden data-in="folder">`;
     container.appendChild(wrap);
+    const menu = wrap.querySelector("#fs-menu"), cur = wrap.querySelector(".fs-cur");
     const sel = wrap.querySelector("select"), msg = wrap.querySelector(".fs-msg");
     const say = (t) => { msg.textContent = t || ""; onStatus && onStatus(t); };
+    const closeMenu = () => { menu.open = false; };
+    const setCur = (t) => { cur.textContent = t || "Elegir dataset…"; };
 
     function fill(keepName) {
       sel.innerHTML = "";
       const names = [...files.keys()].sort((a, b) => a.localeCompare(b, "es"));
-      if (!names.length) { sel.innerHTML = '<option value="">(sin archivos)</option>'; return; }
+      if (!names.length) { sel.innerHTML = '<option value="">(sin archivos)</option>'; setCur("(sin archivos)"); return; }
       names.forEach((n) => { const o = document.createElement("option"); o.value = o.textContent = n; sel.appendChild(o); });
       if (keepName && files.has(keepName)) sel.value = keepName;
+      setCur(sel.value || names[0]);
     }
 
     async function listServer() {
@@ -54,7 +65,7 @@
       files.forEach((v, k) => { if (v.url) files.delete(k); });
       const keep = sel.value || localGet();
       const ok = await listServer();
-      
+
       // FALLBACK TO DEFAULT DATA IF LOCAL file:// BLOCKED FETCH
       if (!ok && typeof window.DEFAULT_DATA !== "undefined") {
           files.set("data.js (integrado)", { isDefault: true });
@@ -74,7 +85,7 @@
     async function load(name) {
       const e = files.get(name); if (!e) return;
       try {
-        say("Cargando " + name + "…");
+        say("Cargando " + name + "…"); setCur(name);
         let text;
         if (e.isDefault) {
            text = window.DEFAULT_DATA;
@@ -95,7 +106,7 @@
       arr.forEach((f) => files.set(f.name, { file: f }));
       fill(arr[0] && arr[0].name);
       if (!arr.length) return say("La selección no contiene .csv/.json");
-      say(`${arr.length} archivo(s) local(es)`); load(sel.value);
+      say(`${arr.length} archivo(s) local(es)`); load(sel.value); closeMenu();
     }
 
     async function pickFolder() {
@@ -113,14 +124,17 @@
     const localGet = () => { try { return localStorage.getItem("fs:last") || ""; } catch (e) { return ""; } };
     const localSet = (v) => { try { localStorage.setItem("fs:last", v); } catch (e) { /* ignore */ } };
 
-    sel.addEventListener("change", () => load(sel.value));
+    sel.addEventListener("click", (ev) => ev.stopPropagation());
+    sel.addEventListener("change", () => { load(sel.value); closeMenu(); });
     wrap.addEventListener("click", (ev) => {
-      const act = ev.target.dataset && ev.target.dataset.act;
+      const btn = ev.target.closest("[data-act]");
+      const act = btn && btn.dataset.act;
       if (act === "reload") refresh();
       if (act === "folder") pickFolder();
       if (act === "files") wrap.querySelector('[data-in="files"]').click();
     });
     wrap.querySelectorAll("input[type=file]").forEach((i) => i.addEventListener("change", () => { addLocal(i.files); i.value = ""; }));
+    document.addEventListener("click", (e) => { if (menu.open && !menu.contains(e.target)) menu.open = false; });
 
     refresh();
     return { refresh, select: (n) => { sel.value = n; load(n); }, destroy: () => wrap.remove() };

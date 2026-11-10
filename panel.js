@@ -10,7 +10,8 @@
   const lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* ignore */ } };
 
-  let S, A, file = "", desc = {}, edits = {}, hist = [], redoS = [], showText = new Set(), sel = null, selHist = [], descTimer = null;
+  let S, A, file = "", desc = {}, edits = {}, added = {}, deleted = new Set(), hist = [], redoS = [], showText = new Set(), sel = null, selHist = [], descTimer = null;
+  const cloneAdded = (it) => { const o = {}; Object.keys(it).forEach((k) => { if (!k.startsWith("__") && !k.startsWith("d_")) o[k] = it[k]; }); return o; };
   const SEP = () => Dataset.CFG.MULTI_SEP;
   const item = (id) => S.ds.items.find((i) => i.id === id);
   const toks = (it, k) => String(it[k] ?? "").split(SEP()).map((x) => x.trim()).filter(Boolean);
@@ -30,10 +31,14 @@
 
   /* ---------------- carga: aplica ediciones y descripciones guardadas ---------------- */
   function onLoad(ds, name) {
-    file = name; desc = lsGet("desc:" + name, {}); edits = lsGet("ed:" + name, {}); hist = []; redoS = []; sel = null; selHist = [];
-    let changed = false;
-    ds.items.forEach((it) => { const e = edits[it.id]; if (e) for (const f in e) { it[f] = e[f].to; changed = true; } });
-    if (changed) ds = Dataset.analyze(ds.items, { currentYear: A.CY, file: name, format: ds.report.format, delimiter: ds.report.delimiter });
+    file = name; desc = lsGet("desc:" + name, {}); edits = lsGet("ed:" + name, {});
+    added = lsGet("added:" + name, {}); deleted = new Set(lsGet("deleted:" + name, []));
+    hist = []; redoS = []; sel = null; selHist = [];
+    let items = ds.items.filter((it) => !deleted.has(it.id));
+    let changed = deleted.size > 0;
+    items.forEach((it) => { const e = edits[it.id]; if (e) for (const f in e) { it[f] = e[f].to; changed = true; } });
+    if (Object.keys(added).length) { items = items.concat(Object.values(added).map((r) => ({ ...r }))); changed = true; }
+    if (changed) ds = Dataset.analyze(items, { currentYear: A.CY, file: name, format: ds.report.format, delimiter: ds.report.delimiter });
     S.ds = ds;
     const tcs = textCols(); showText = new Set(lsGet("txt:" + name, tcs.slice(0, 1)).filter((c) => tcs.includes(c)));
     $("search").value = ""; search(""); renderTextSel(); badge(); $("detail").classList.remove("open");
@@ -52,32 +57,73 @@
     if (old === value) return;
     hist.push({ id, field, old, value, g }); redoS = []; record(id, field, old, value); it[field] = value;
   }
-  function step(from, to, dirOld) {                       // deshacer / rehacer (con agrupación para renombrados)
+  /* ---------------- alta y baja de autores (con deshacer/rehacer) ---------------- */
+  function applyAdd(id, rec) {
+    if (!item(id)) S.ds.items.push({ ...rec });
+    added[id] = { ...rec }; deleted.delete(id);
+  }
+  function applyRemove(id, wasAdded) {
+    const idx = S.ds.items.findIndex((i) => i.id === id);
+    if (idx >= 0) S.ds.items.splice(idx, 1);
+    if (wasAdded) delete added[id]; else deleted.add(id);
+  }
+  function addAuthor() {
+    if (!S || !S.ds) { alert("Primero elige o carga un dataset arriba."); return; }
+    const g = Date.now(), id = "nuevo-" + g.toString(36);
+    const rec = { id, name: "", birth: "", death: "" };
+    hist.push({ kind: "add", id, rec, g }); redoS = [];
+    applyAdd(id, rec); commit(); showItem(id);
+    requestAnimationFrame(() => { const el = $("detail").querySelector('[data-f="name"]'); if (el) el.focus(); });
+  }
+  function deleteAuthor(id) {
+    const it = item(id); if (!it) return;
+    if (!confirm(`¿Eliminar a «${nameOf(it)}»? Puedes deshacerlo con Ctrl+Z.`)) return;
+    const g = Date.now(), wasAdded = !!added[id], rec = cloneAdded(it);
+    hist.push({ kind: "remove", id, rec, wasAdded, g }); redoS = [];
+    applyRemove(id, wasAdded); close(); commit();
+  }
+
+  function step(from, to, dirOld) {                       // deshacer / rehacer (con agrupación para renombrados / altas / bajas)
     if (!from.length) return;
     const g = from[from.length - 1].g;
     do {
-      const h = from.pop(); to.push(h); const it = item(h.id), a = dirOld ? h.value : h.old, b = dirOld ? h.old : h.value;
-      record(h.id, h.field, a, b); if (it) it[h.field] = b;
+      const h = from.pop(); to.push(h);
+      if (h.kind === "add") { dirOld ? applyRemove(h.id, true) : applyAdd(h.id, h.rec); }
+      else if (h.kind === "remove") { dirOld ? applyAdd(h.id, h.rec) : applyRemove(h.id, h.wasAdded); }
+      else {
+        const it = item(h.id), a = dirOld ? h.value : h.old, b = dirOld ? h.old : h.value;
+        record(h.id, h.field, a, b); if (it) it[h.field] = b;
+      }
     } while (g !== undefined && from.length && from[from.length - 1].g === g);
     commit();
   }
   const undo = () => step(hist, redoS, true), redo = () => step(redoS, hist, false);
   function discard() {
-    if (!Object.keys(edits).length || !confirm("¿Descartar todos los cambios de este archivo?")) return;
-    Object.entries(edits).forEach(([id, fs]) => { const it = item(id); if (it) Object.entries(fs).forEach(([f, e]) => { it[f] = e.from; }); });
-    edits = {}; hist = []; redoS = []; commit();
+    const n = Object.keys(edits).length + Object.keys(added).length + deleted.size;
+    if (!n || !confirm("¿Descartar todos los cambios de este archivo (autores añadidos y eliminados incluidos)?")) return;
+    edits = {}; added = {}; deleted = new Set(); hist = []; redoS = [];
+    lsSet("ed:" + file, edits); lsSet("added:" + file, added); lsSet("deleted:" + file, [...deleted]);
+    if (A.reloadFile) A.reloadFile(); else { badge(); A.reanalyze(); }
   }
-  function commit() { lsSet("ed:" + file, edits); badge(); A.reanalyze(); refreshSel(); }
+  function commit() {
+    lsSet("ed:" + file, edits);
+    Object.keys(added).forEach((id) => { const it = item(id); if (it) added[id] = cloneAdded(it); });
+    lsSet("added:" + file, added); lsSet("deleted:" + file, [...deleted]);
+    badge(); A.reanalyze(); refreshSel();
+  }
   function badge() {
-    const n = Object.values(edits).reduce((a, e) => a + Object.keys(e).length, 0);
-    $("edit-badge").textContent = n ? `${n} cambio(s)` : "";
+    const nf = Object.values(edits).reduce((a, e) => a + Object.keys(e).length, 0);
+    const na = Object.keys(added).length, nd = deleted.size, n = nf + na + nd;
+    const parts = [];
+    if (nf) parts.push(`${nf} cambio(s)`); if (na) parts.push(`${na} nuevo(s)`); if (nd) parts.push(`${nd} eliminado(s)`);
+    $("edit-badge").textContent = parts.join(" · ");
     $("undo").disabled = !hist.length; $("redo").disabled = !redoS.length; $("discard").disabled = !n;
   }
 
   /* ---------------- selección y ficha ---------------- */
   // historial de selección: "Volver" regresa al autor o categoría anterior
   const go = (n) => { if (sel && JSON.stringify(sel) !== JSON.stringify(n)) { selHist.push(sel); if (selHist.length > 30) selHist.shift(); } sel = n; };
-  const headBar = () => `<div class="dhead">${selHist.length ? '<button class="icon bk" data-act="back" title="Volver a la selección anterior (Alt+←)" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button>' : ""}<span class="spacer"></span><button class="icon bk" data-act="close" title="Cerrar (Esc)" aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button></div>`;
+  const headBar = (showDelete) => `<div class="dhead">${selHist.length ? '<button class="icon bk" data-act="back" title="Volver a la selección anterior (Alt+←)" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button>' : ""}<span class="spacer"></span>${showDelete ? '<button class="icon bk" data-act="delete" title="Eliminar este autor" aria-label="Eliminar autor"><svg class="ic"><use href="#i-trash"/></svg></button>' : ""}<button class="icon bk" data-act="close" title="Cerrar (Esc)" aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button></div>`;
   function goBack() {
     if (!sel) return false;
     let prev = null;
@@ -119,7 +165,7 @@
       const ds = cur.map((v) => descOf(d.key, v)).filter(Boolean).join(" · ");
       return `<div class="fld"><label>${esc(d.label)}</label>${ctl}${ds ? `<div class="hint">${esc(trunc(ds, 260))}</div>` : ""}</div>`;
     };
-    $("detail").innerHTML = `${headBar()}
+    $("detail").innerHTML = `${headBar(true)}
       <input class="title" data-f="name" value="${esc(it.name || "")}" aria-label="Nombre">
       <div class="sub">${esc(lifeText(it))}</div>
       ${(L.warnings || []).map((w) => `<span class="chip w">${esc(A.WARN[w] || w)}</span>`).join("")}
@@ -132,7 +178,7 @@
   function renderNode() {
     const d = dimOf(sel.dim), ids = idsOf(sel.dim, sel.value);
     const members = S.ds.items.filter((i) => ids.has(i.id)).sort((a, b) => nameOf(a).localeCompare(nameOf(b), "es"));
-    $("detail").innerHTML = `${headBar()}
+    $("detail").innerHTML = `${headBar(false)}
       <div class="sub">${esc(d ? d.label : sel.dim)}</div>
       <h2><i class="dot" style="background:${A.color()(sel.value)}"></i>${esc(sel.value)}</h2>
       <div class="sub">${ids.size} ítem(s)</div>
@@ -151,6 +197,7 @@
     }));
     box.querySelectorAll("[data-act=close]").forEach((b) => b.addEventListener("click", close));
     box.querySelectorAll("[data-act=back]").forEach((b) => b.addEventListener("click", goBack));
+    box.querySelectorAll("[data-act=delete]").forEach((b) => b.addEventListener("click", () => deleteAuthor(sel.id)));
     box.querySelectorAll(".mem").forEach((b) => b.addEventListener("click", () => showItem(b.dataset.id)));
     const ta = box.querySelector("[data-desc]");
     if (ta) ta.addEventListener("input", () => {
@@ -281,5 +328,5 @@
     });
   }
 
-  root.Panel = { init, onLoad, back: goBack, showItem, showNode, close, tipItem, tipNode, tipLink, tipHide, place, extra, hasExtra: () => showText.size > 0, descOf };
+  root.Panel = { init, onLoad, back: goBack, showItem, showNode, close, tipItem, tipNode, tipLink, tipHide, place, extra, hasExtra: () => showText.size > 0, descOf, addAuthor, deleteAuthor };
 })(typeof window !== "undefined" ? window : globalThis);

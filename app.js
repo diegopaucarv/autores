@@ -30,6 +30,34 @@
   };
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+  /* ---------- medición de texto para ajuste de etiquetas (Sankey) ---------- */
+  const LINE_H = 13, LBL_FONT = '600 12px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif';
+  let _mctx = null;
+  function measureCtx() {
+    if (!_mctx) { _mctx = document.createElement("canvas").getContext("2d"); _mctx.font = LBL_FONT; }
+    return _mctx;
+  }
+  // Envuelve `text` en hasta `maxLines` líneas que quepan en `maxW` px; recorta la última con "…" si sobra texto.
+  function wrapLabel(text, maxW, maxLines) {
+    const ctx = measureCtx();
+    const words = String(text).split(/\s+/).filter(Boolean);
+    if (!words.length) return [""];
+    const lines = []; let cur = "", wi = 0;
+    while (wi < words.length) {
+      const test = cur ? cur + " " + words[wi] : words[wi];
+      if (!cur || ctx.measureText(test).width <= maxW) { cur = test; wi++; }
+      else { lines.push(cur); cur = ""; if (lines.length >= maxLines) break; }
+    }
+    if (cur && lines.length < maxLines) lines.push(cur);
+    if (wi < words.length || !lines.length) {
+      let last = lines[lines.length - 1] || "";
+      if (!lines.length) lines.push("");
+      while (last.length && ctx.measureText(last + "…").width > maxW) last = last.slice(0, -1);
+      lines[lines.length - 1] = last.replace(/\s+$/, "") + "…";
+    }
+    return lines.slice(0, maxLines);
+  }
+
   const S = { ds: null, cols: [], colorKey: null, file: "" };
   let pinnedIds = null; // Holds the currently clicked/sticky selection
 
@@ -40,6 +68,7 @@
     S.file = name;
     const ds = Panel.onLoad(Dataset.load(text, { file: name }), name);
     S.ds = ds;
+    $("add-author").disabled = false;
     renderReport(ds);
     if (!ds.items.length) { ["selectors", "legend", "sankey", "timeline"].forEach((i) => ($(i).innerHTML = "")); return; }
     const d = ds.defaults.length >= 2 ? ds.defaults : ds.dimensions.slice(0, 3).map((x) => x.key);
@@ -181,7 +210,37 @@
     const W = 1100, perCol = d3.max(cols, (c) => [...nodes.values()].filter((n) => n.col === c).length);
     const isName = cols.includes("name");
     const rowH = isName ? (Panel.hasExtra() ? 46 : 34) : 22;
-    const H = Math.max(420, perCol * rowH + 60);
+    const MARGIN = 170;
+
+    // --- posiciones X aproximadas por columna (antes del layout) para dimensionar las etiquetas ---
+    const colStep = cols.length > 1 ? (W - 2 * MARGIN) / (cols.length - 1) : 0;
+    const approxX0 = (i) => MARGIN + i * colStep;
+
+    // --- ajustar cada etiqueta a su ancho disponible y calcular la altura de su bloque ---
+    [...nodes.values()].forEach((n) => {
+      const idx = cols.indexOf(n.col), first = idx === 0, nameCol = n.col === "name";
+      const x0 = approxX0(idx), x1 = x0 + 14;
+      const labelX = first ? x0 - 6 : x1 + 6;
+      const nextX0 = idx + 1 < cols.length ? approxX0(idx + 1) : null;
+      let availW = first ? (x0 - 10) : (nextX0 != null ? nextX0 - 14 - labelX : (W - 10) - labelX);
+      availW = Math.max(70, Math.min(260, availW));
+      const text = nameCol ? n.label : `${n.label} (${n.ids.size})`;
+      n.__lines = wrapLabel(text, availW, 2);
+      n.__anchor = first ? "end" : "start";
+      let extraLines = nameCol ? 1 + (Panel.hasExtra() ? 1 : 0) : 0;
+      n.__blockLines = n.__lines.length + extraLines;
+      n.__blockHeight = n.__blockLines * LINE_H;
+    });
+
+    // --- altura del gráfico: la base por filas, o la que exijan los bloques de etiquetas apilados ---
+    let labelReq = 0;
+    cols.forEach((c) => {
+      const ns = [...nodes.values()].filter((n) => n.col === c);
+      const h = ns.reduce((a, n) => a + n.__blockHeight, 0) + Math.max(0, ns.length - 1) * 3;
+      labelReq = Math.max(labelReq, h);
+    });
+    const H = Math.max(420, perCol * rowH + 60, labelReq + 38);
+
     const svg = host.append("svg").attr("viewBox", [0, 0, W, H]).attr("width", "100%").attr("role", "img");
     const g = d3.sankey().nodeId((d) => d.id).nodeWidth(14).nodePadding(8).nodeSort((a, b) => {
          const isTime = (c) => c && (c.includes("cohort") || c.includes("century"));
@@ -190,7 +249,7 @@
          }
          return b.value - a.value;
       })
-      .extent([[170, 30], [W - 170, H - 8]])({ nodes: [...nodes.values()], links: [...links.values()] });
+      .extent([[MARGIN, 30], [W - MARGIN, H - 8]])({ nodes: [...nodes.values()], links: [...links.values()] });
     cols.forEach((c) => {
       const ns = g.nodes.filter((n) => n.col === c); if (!ns.length) return;
       const dm = S.ds.dimensions.find((d) => d.key === c), first = c === cols[0];
@@ -206,6 +265,18 @@
       .on("click", (ev, d) => { ev.stopPropagation(); pin(d.ids); })
       .on("mousemove.tip", (ev, d) => Panel.tipLink(ev, d)).on("mouseleave.tip", Panel.tipHide);
 
+    // --- decluttering vertical: evita que las etiquetas se superpongan dentro de cada columna ---
+    cols.forEach((c) => {
+      const ns = g.nodes.filter((n) => n.col === c);
+      const items2 = ns.map((n) => ({ n, center: (n.y0 + n.y1) / 2 })).sort((a, b) => a.center - b.center);
+      let prevBottom = -Infinity;
+      items2.forEach((it) => {
+        let top = it.center - it.n.__blockHeight / 2;
+        if (top < prevBottom + 3) top = prevBottom + 3;
+        it.n.__labelTop = top; prevBottom = top + it.n.__blockHeight;
+      });
+    });
+
     const ng = svg.append("g").selectAll("g").data(g.nodes).join("g").attr("class", "sk-node")
       .on("mouseenter", (_, d) => highlight(d.ids))
       .on("mouseleave", () => highlight(null))
@@ -214,34 +285,37 @@
 
     ng.append("rect").attr("x", (d) => d.x0).attr("y", (d) => d.y0).attr("width", (d) => d.x1 - d.x0)
       .attr("height", (d) => Math.max(2, d.y1 - d.y0)).attr("fill", (d) => (d.col === ck ? color(d.label) : NEUTRAL));
-    const txt = ng.append("text").attr("class", "lbl")
-      .attr("text-anchor", (d) => (d.col === cols[0] ? "end" : "start"));
-      
-    txt.append("tspan")
-      .attr("x", (d) => (d.col === cols[0] ? d.x0 - 6 : d.x1 + 6))
-      .attr("y", (d) => (d.y0 + d.y1) / 2)
-      .attr("dy", (d) => (d.col === 'name' ? "-0.4em" : "0.35em"))
-      .text((d) => (d.label.length > 30 ? d.label.slice(0, 29) + "…" : d.label) + (d.col === 'name' ? "" : ` (${d.ids.size})`));
 
-    txt.filter(d => d.col === 'name').append("tspan")
-      .attr("x", (d) => (d.col === cols[0] ? d.x0 - 6 : d.x1 + 6))
-      .attr("y", (d) => (d.y0 + d.y1) / 2)
-      .attr("dy", "1.3em")
-      .attr("fill", "var(--muted)")
-      .style("font-size", "9.5px")
-      .style("font-weight", "500")
-      .text(d => {
-          const it = items.find(i => i.id === [...d.ids][0]);
-          if (!it || !it.__life || !it.__life.valid) return "";
-          const L = it.__life;
-          return L.mode === 'life' 
-            ? `${L.birth} – ${L.alive ? 'hoy' : L.death}`
-            : `act. ${L.activeStart} – ${L.activeEnd}`;
+    // línea guía: solo cuando la etiqueta tuvo que desplazarse para no solaparse
+    ng.each(function (d) {
+      const nodeCenter = (d.y0 + d.y1) / 2, labelCenter = d.__labelTop + d.__blockHeight / 2;
+      if (Math.abs(labelCenter - nodeCenter) <= 2) return;
+      const labelX = d.__anchor === "end" ? d.x0 - 6 : d.x1 + 6;
+      d3.select(this).insert("line", "text").attr("class", "lbl-lead")
+        .attr("x1", d.__anchor === "end" ? d.x0 - 3 : d.x1 + 3).attr("y1", nodeCenter)
+        .attr("x2", d.__anchor === "end" ? labelX + 3 : labelX - 3).attr("y2", labelCenter);
+    });
+
+    const txt = ng.append("text").attr("class", "lbl").attr("text-anchor", (d) => d.__anchor);
+    txt.each(function (d) {
+      const sel = d3.select(this), labelX = d.__anchor === "end" ? d.x0 - 6 : d.x1 + 6;
+      d.__lines.forEach((line, i) => {
+        sel.append("tspan").attr("x", labelX).attr("y", d.__labelTop + i * LINE_H + LINE_H * 0.78).text(line);
       });
-    if (Panel.hasExtra()) txt.filter((d) => d.col === "name").append("tspan")
-      .attr("x", (d) => (d.col === cols[0] ? d.x0 - 6 : d.x1 + 6)).attr("y", (d) => (d.y0 + d.y1) / 2).attr("dy", "2.5em")
-      .attr("fill", "var(--ink-3)").style("font-size", "9px").style("font-weight", "400")
-      .text((d) => Panel.extra(items.find((i) => i.id === [...d.ids][0]) || {}));
+      let y = d.__labelTop + d.__lines.length * LINE_H;
+      if (d.col !== "name") return;
+      const it = items.find((i2) => i2.id === [...d.ids][0]);
+      let dateText = "";
+      if (it && it.__life && it.__life.valid) {
+        const L = it.__life;
+        dateText = L.mode === "life" ? `${L.birth} – ${L.alive ? "hoy" : L.death}` : `act. ${L.activeStart} – ${L.activeEnd}`;
+      }
+      sel.append("tspan").attr("x", labelX).attr("y", y + LINE_H * 0.78)
+        .attr("fill", "var(--muted)").style("font-size", "9.5px").style("font-weight", "500").text(dateText);
+      y += LINE_H;
+      if (Panel.hasExtra()) sel.append("tspan").attr("x", labelX).attr("y", y + LINE_H * 0.78)
+        .attr("fill", "var(--ink-3)").style("font-size", "9px").style("font-weight", "400").text(Panel.extra(it || {}));
+    });
   }
 
   /* ---------- Timeline ---------- */
@@ -375,12 +449,12 @@
     };
     $("theme").title = dark() ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
     $("theme").onclick = () => setTheme(dark() ? "light" : "dark", true);
-    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-      let saved = null; try { saved = localStorage.getItem("theme"); } catch (x) { /* ignore */ }
-      if (!saved) setTheme(e.matches ? "dark" : "light");
-    });
+    // Sin seguimiento del tema del sistema: el valor por defecto es claro y solo cambia con el botón.
 
-    FolderSelector.setup({ container: $("fs"), dataDir: "data/", onText: boot });
+    const fsCtl = FolderSelector.setup({ container: $("fs"), dataDir: "data/", onText: boot });
+    S.api.reloadFile = () => { if (S.file) fsCtl.select(S.file); };
+
+    $("add-author").onclick = () => Panel.addAuthor();
   });
   S.api = { CY, WARN, color: () => color, cols: () => S.cols, renderAll, reanalyze, setPinned, setSearch };
   window.__app = S;
