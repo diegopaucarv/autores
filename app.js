@@ -12,11 +12,24 @@
       const dim = dims.find((d) => d.key === S.colorKey);
       const domain = dim ? dim.values.map((x) => x.value) : [];
       const L = domain.length;
+      
+      // Gradiente monocromático estricto: de celeste muy claro a azul marino muy oscuro
       color = d3.scaleOrdinal()
         .domain(domain)
-        .range(domain.map((_, i) => d3.interpolateRgb("#c6dbef", "#08306b")(i / Math.max(1, L - 1))));
+        .range(domain.map((_, i) => d3.interpolateBlues(0.15 + (i / Math.max(1, L - 1)) * 0.85)));
     } else {
-      color = d3.scaleOrdinal(d3.schemeTableau10);
+      // For categorical, let's try schemeSet3 for a softer, distinct set, 
+      // or schemePaired if more items. Let's stick to Tableau10 but 
+      // we can add a fallback if we have more than 10 categories
+      const catColor = d3.scaleOrdinal(d3.schemeTableau10);
+      color = (v) => {
+        // Simple hash to map unknown values to the 10 colors consistently
+        let hash = 0;
+        for (let i = 0; i < v.length; i++) hash = v.charCodeAt(i) + ((hash << 5) - hash);
+        return catColor(Math.abs(hash) % 10);
+      };
+      color.domain = catColor.domain;
+      color.range = catColor.range;
     }
   }
   const WARN = {
@@ -138,7 +151,17 @@
     const on = activeIds && activeIds.size;
     
     d3.selectAll(".sk-node").style("opacity", (d) => (!on || [...d.ids].some((i) => activeIds.has(i)) ? 1 : 0.15));
-    d3.selectAll(".sk-link").style("opacity", (d) => (!on || [...d.ids].some((i) => activeIds.has(i)) ? 1 : 0.06));
+    d3.selectAll(".sk-link").style("opacity", (d) => (!on || [...d.ids].some((i) => activeIds.has(i)) ? 0.7 : 0.06));
+    if (on) {
+        // Add a class or style to highlighted links to make them pop more
+        d3.selectAll(".sk-link").filter((d) => [...d.ids].some((i) => activeIds.has(i)))
+          .style("stroke-opacity", 0.8)
+          .style("stroke-width", (d) => Math.max(2, d.width * 1.2)); 
+    } else {
+        d3.selectAll(".sk-link")
+          .style("stroke-opacity", 0.35)
+          .style("stroke-width", (d) => Math.max(1, d.width));
+    }
     d3.selectAll(".tl-row").style("opacity", (d) => (!on || activeIds.has(d.id) ? 1 : 0.15));
   }
 
