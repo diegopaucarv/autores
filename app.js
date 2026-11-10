@@ -4,17 +4,19 @@
   const $ = (id) => document.getElementById(id);
   const CY = new Date().getFullYear();
   const MISSING = "(vacío)";
-  const NEUTRAL = "#9aa3ad";
+  const dark = () => document.documentElement.dataset.theme === "dark";
+  let NEUTRAL = "#9aa3ad";
   const PALETTE = ["#3b6ea8", "#d9822b", "#4a9a7b", "#c4504d", "#8a6bb0", "#b8a13a", "#3f9cae", "#c9739c", "#7a8f3c", "#8c6b4f", "#5b6a9a", "#d1a35f"];
   let color = () => NEUTRAL;
   const isTime = (c) => c && (c.includes("cohort") || c.includes("century"));
-  // Un color por valor de la variable de color, asignado por orden (sin colisiones por hash); lo desconocido es gris.
+  // Un color por valor (por orden, sin colisiones); lo desconocido es gris. Se recalcula al cambiar de tema.
   function updateColorScale(dims) {
+    NEUTRAL = dark() ? "#6f7a86" : "#9aa3ad";
     const dim = dims && dims.find((d) => d.key === S.colorKey);
-    const domain = dim ? dim.values.map((x) => x.value) : [], L = domain.length;
+    const domain = dim ? dim.values.map((x) => x.value) : [], L = domain.length, f = (i) => i / Math.max(1, L - 1);
     const range = isTime(S.colorKey)
-      ? domain.map((_, i) => d3.interpolateBlues(0.3 + 0.65 * (i / Math.max(1, L - 1))))
-      : L <= PALETTE.length ? PALETTE.slice(0, L) : d3.quantize((t) => d3.interpolateSinebow(t), L);
+      ? domain.map((_, i) => d3.interpolateBlues(dark() ? 0.55 + 0.4 * f(i) : 0.3 + 0.65 * f(i)))
+      : (L <= PALETTE.length ? PALETTE : d3.quantize((t) => d3.interpolateSinebow(t), L)).slice(0, L).map((c) => (dark() ? d3.color(c).brighter(0.35).formatHex() : c));
     const m = new Map(domain.map((v, i) => [v, range[i]]));
     color = (v) => m.get(v) || NEUTRAL;
   }
@@ -49,7 +51,8 @@
     $("cohort-val").textContent = Dataset.CFG.COHORT_SIZE;
     $("cohort-slider").value = Dataset.CFG.COHORT_SIZE;
     
-    renderSelectors(); renderAll();
+    S.tlSort = $("tl-sort").value = "start"; S.tlDesc = false; $("tl-dir").classList.remove("desc");
+    renderSelectors(); renderAll(); VH.length = 0; pushView();
   }
 
   /* ---------- reporte de veracidad / calidad ---------- */
@@ -57,15 +60,15 @@
     const r = ds.report, chips = (o, map, cls) => Object.entries(o || {}).map(([k, v]) => `<span class="chip ${cls}">${v}× ${esc(map[k] || k)}</span>`).join("");
     const merged = Object.keys(r.mergedDuplicates || {}).length;
     const nameOf = (id) => (ds.items.find((i) => i.id === id) || {}).name || id;
-    $("report").innerHTML = r.error ? `<div class="report bad">⚠ ${esc(r.error)}</div>` : `
+    $("report").innerHTML = r.error ? `<div class="report bad">${esc(r.error)}</div>` : `
       <div class="report">
         <b>${esc(S.file)}</b> <span class="chip">${esc(r.format || "?")}${r.delimiter ? " · delim «" + esc(r.delimiter) + "»" : ""}</span>
         <span class="pill ${r.invalid ? "warn" : "ok"}">${r.valid}/${r.total} con fechas válidas</span>
-        <span class="chip">👤 ${r.alive} vivos/activos</span>
-        ${r.invalid ? "<div>✗ Descartados: " + chips(r.reasons, REASON, "w") + "</div>" : ""}
-        ${Object.keys(r.warnings).length ? "<div>⚠ Avisos: " + chips(r.warnings, WARN, "w") + "</div>" : ""}
+        <span class="chip">${r.alive} vivos/activos</span>
+        ${r.invalid ? "<div>Descartados: " + chips(r.reasons, REASON, "w") + "</div>" : ""}
+        ${Object.keys(r.warnings).length ? "<div>Avisos: " + chips(r.warnings, WARN, "w") + "</div>" : ""}
         ${r.needsReview.length ? `<div class="w2">Verificar si siguen vivos: ${r.needsReview.map((i) => esc(nameOf(i))).join(" · ")}</div>` : ""}
-        ${r.conflicts && r.conflicts.length ? `<details><summary>≠ ${r.conflicts.length} conflictos entre duplicados (se conserva el primero)</summary>${r.conflicts.map((c) => `<div>${esc(c.name)} · ${esc(c.field)}: «${esc(c.kept)}» vs «${esc(c.other)}»</div>`).join("")}</details>` : ""}
+        ${r.conflicts && r.conflicts.length ? `<details><summary>${r.conflicts.length} conflictos entre duplicados (se conserva el primero)</summary>${r.conflicts.map((c) => `<div>${esc(c.name)} · ${esc(c.field)}: «${esc(c.kept)}» vs «${esc(c.other)}»</div>`).join("")}</details>` : ""}
         ${r.ignoredColumns.length ? `<div>Columnas ignoradas (derivadas): ${r.ignoredColumns.map(esc).join(", ")}</div>` : ""}
       </div>`;
   }
@@ -74,7 +77,7 @@
   function renderSelectors() {
     const box = $("selectors"); box.innerHTML = "";
     const dims = S.ds.dimensions;
-    if (dims.length < 2) { box.textContent = "⚠ Menos de 2 dimensiones categóricas: no hay Sankey posible."; return; }
+    if (dims.length < 2) { box.textContent = "Menos de 2 dimensiones categóricas: no hay Sankey posible."; return; }
     const mk = (slot, optional) => {
       const sel = document.createElement("select");
       if (optional) sel.innerHTML = '<option value="">(ninguna)</option>';
@@ -90,7 +93,7 @@
         if (other >= 0) S.cols[other] = S.cols[slot];
         S.cols[slot] = v || null; S.cols = S.cols.filter((c, i) => c || i < 2);
         
-        renderSelectors(); renderAll();
+        renderSelectors(); renderAll(); pushView();
       });
       return sel;
     };
@@ -101,9 +104,9 @@
     cs.addEventListener("change", () => { 
       S.colorKey = cs.value; 
       updateColorScale(S.ds.dimensions);
-      renderAll(); 
+      renderAll(); pushView(); 
     });
-    const l = document.createElement("label"); l.append("  Color: ", cs); box.appendChild(l);
+    const l = document.createElement("label"); l.append("Color", cs); box.appendChild(l);
   }
 
   const vals = (it, key) => {
@@ -134,6 +137,12 @@
   let hoverIds = null, searchIds = null;
   function setPinned(ids) { pinnedIds = ids && ids.size ? ids : null; paint(); }
   function setSearch(ids) { searchIds = ids || null; paint(); }
+  // Filtrar: fija (o libera, si es la misma) la selección sin abrir la ficha; cierra la que estuviera abierta.
+  function pin(ids) {
+    const same = pinnedIds && ids && pinnedIds.size === ids.size && [...pinnedIds].every((v) => ids.has(v));
+    Panel.close(); if (!same) setPinned(ids);
+  }
+  const onLabel = (ev) => !!(ev.target.closest && ev.target.closest(".lbl"));
   function highlight(ids, isClick = false) {
     if (isClick) pinnedIds = pinnedIds && ids && pinnedIds.size === ids.size && [...pinnedIds].every((v) => ids.has(v)) ? null : ids;
     else hoverIds = ids;
@@ -194,13 +203,13 @@
       .attr("stroke-width", (d) => Math.max(1, d.width))
       .on("mouseenter", (_, d) => highlight(d.ids))
       .on("mouseleave", () => highlight(null))
-      .on("click", (ev, d) => { ev.stopPropagation(); highlight(d.ids, true); })
+      .on("click", (ev, d) => { ev.stopPropagation(); pin(d.ids); })
       .on("mousemove.tip", (ev, d) => Panel.tipLink(ev, d)).on("mouseleave.tip", Panel.tipHide);
 
     const ng = svg.append("g").selectAll("g").data(g.nodes).join("g").attr("class", "sk-node")
       .on("mouseenter", (_, d) => highlight(d.ids))
       .on("mouseleave", () => highlight(null))
-      .on("click", (ev, d) => { ev.stopPropagation(); Panel.showNode(d.col, d.label); })
+      .on("click", (ev, d) => { ev.stopPropagation(); if (onLabel(ev)) Panel.showNode(d.col, d.label); else pin(d.ids); })
       .on("mousemove.tip", (ev, d) => Panel.tipNode(ev, d)).on("mouseleave.tip", Panel.tipHide);
 
     ng.append("rect").attr("x", (d) => d.x0).attr("y", (d) => d.y0).attr("width", (d) => d.x1 - d.x0)
@@ -274,7 +283,7 @@
       .attr("transform", (d) => `translate(0,${yOf.get(d.id)})`)
       .on("mouseenter", (_, d) => highlight(new Set([d.id])))
       .on("mouseleave", () => highlight(null))
-      .on("click", (ev, d) => { ev.stopPropagation(); Panel.showItem(d.id); })
+      .on("click", (ev, d) => { ev.stopPropagation(); if (onLabel(ev)) Panel.showItem(d.id); else pin(new Set([d.id])); })
       .on("mousemove.tip", (ev, d) => Panel.tipItem(ev, d)).on("mouseleave.tip", Panel.tipHide);
     r.append("text").attr("x", LW - 8).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "end").attr("class", "lbl")
       .text((d) => (d.name || d.id).slice(0, 30));
@@ -288,6 +297,31 @@
       r.attr("transform", (d) => `translate(0,${prev.has(d.id) ? prev.get(d.id) : yOf.get(d.id)})`)
         .transition().duration(500).attr("transform", (d) => `translate(0,${yOf.get(d.id)})`);
     paint();
+  }
+
+  /* ---------- historial de vistas: Volver / Restablecer ---------- */
+  const VH = [];
+  const snap = () => JSON.stringify({ cols: S.cols, colorKey: S.colorKey, tlSort: S.tlSort || "start", tlDesc: !!S.tlDesc, cohort: Dataset.CFG.COHORT_SIZE });
+  function updateNav() { $("view-back").disabled = VH.length < 2; }
+  function pushView() { const v = snap(); if (VH[VH.length - 1] !== v) VH.push(v); if (VH.length > 50) VH.shift(); updateNav(); }
+  function applyView(json) {
+    const v = JSON.parse(json);
+    S.cols = v.cols; S.colorKey = v.colorKey; S.tlSort = v.tlSort; S.tlDesc = v.tlDesc;
+    $("tl-sort").value = v.tlSort; $("tl-dir").classList.toggle("desc", v.tlDesc);
+    if (v.cohort !== Dataset.CFG.COHORT_SIZE) {
+      Dataset.CFG.COHORT_SIZE = v.cohort; $("cohort-slider").value = v.cohort; $("cohort-val").textContent = v.cohort;
+      S.ds = Dataset.analyze(S.ds.items, { currentYear: CY, file: S.file, format: S.ds.report.format, delimiter: S.ds.report.delimiter });
+    }
+    updateColorScale(S.ds.dimensions); renderSelectors(); renderAll(); updateNav();
+  }
+  function back() { if (VH.length < 2) return; VH.pop(); applyView(VH[VH.length - 1]); }
+  function resetView() {
+    if (!S.ds || !S.ds.items.length) return;
+    const d = S.ds.defaults.length >= 2 ? S.ds.defaults : S.ds.dimensions.slice(0, 3).map((x) => x.key);
+    const cols = [d[0], d[1], d[2] || null].filter((x, i) => x || i < 2);
+    applyView(JSON.stringify({ cols, colorKey: cols[0] || null, tlSort: "start", tlDesc: false, cohort: 50 }));
+    const q = $("search"); q.value = ""; q.dispatchEvent(new Event("input"));
+    Panel.close(); pushView();
   }
 
   /* ---------- exportar ---------- */
@@ -309,7 +343,7 @@
     });
     $("tl-sort").addEventListener("change", (e) => { S.tlSort = e.target.value; renderTimeline(true); });
     $("tl-dir").addEventListener("click", (e) => {
-      S.tlDesc = !S.tlDesc; e.currentTarget.textContent = S.tlDesc ? "↓" : "↑";
+      S.tlDesc = !S.tlDesc; e.currentTarget.classList.toggle("desc", S.tlDesc);
       e.currentTarget.setAttribute("aria-label", S.tlDesc ? "Orden descendente" : "Orden ascendente"); renderTimeline(true);
     });
     Panel.init(S, S.api);
@@ -327,6 +361,23 @@
            renderSelectors();
            renderAll();
         }
+    });
+
+    $("view-back").onclick = back; $("view-reset").onclick = resetView;
+    $("tl-sort").addEventListener("change", pushView); $("tl-dir").addEventListener("click", pushView);
+    $("cohort-slider").addEventListener("change", pushView);
+    document.addEventListener("keydown", (e) => { if (e.altKey && e.key === "ArrowLeft") { e.preventDefault(); if (!Panel.back()) back(); } });
+    const setTheme = (t, save) => {
+      document.documentElement.dataset.theme = t;
+      $("theme").title = t === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
+      if (save) try { localStorage.setItem("theme", t); } catch (x) { /* ignore */ }
+      if (S.ds) { updateColorScale(S.ds.dimensions); renderAll(); }
+    };
+    $("theme").title = dark() ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
+    $("theme").onclick = () => setTheme(dark() ? "light" : "dark", true);
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+      let saved = null; try { saved = localStorage.getItem("theme"); } catch (x) { /* ignore */ }
+      if (!saved) setTheme(e.matches ? "dark" : "light");
     });
 
     FolderSelector.setup({ container: $("fs"), dataDir: "data/", onText: boot });

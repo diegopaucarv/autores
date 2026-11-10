@@ -9,9 +9,9 @@
     wrap.className = "fs";
     wrap.innerHTML = `
       <label>Dataset <select aria-label="Archivo de datos"></select></label>
-      <button type="button" data-act="reload" title="Volver a listar ${dataDir}">↻</button>
-      <button type="button" data-act="folder">📁 Carpeta…</button>
-      <button type="button" data-act="files">＋ Archivo…</button>
+      <button type="button" class="icon" data-act="reload" title="Volver a listar ${dataDir}" aria-label="Recargar lista"><svg class="ic"><use href="#i-reload"/></svg></button>
+      <button type="button" data-act="folder">Carpeta…</button>
+      <button type="button" data-act="files">Archivo…</button>
       <span class="fs-msg"></span>
       <input type="file" accept=".csv,.json,text/csv,application/json" multiple hidden data-in="files">
       <input type="file" webkitdirectory multiple hidden data-in="folder">`;

@@ -10,7 +10,7 @@
   const lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* ignore */ } };
 
-  let S, A, file = "", desc = {}, edits = {}, hist = [], redoS = [], showText = new Set(), sel = null, descTimer = null;
+  let S, A, file = "", desc = {}, edits = {}, hist = [], redoS = [], showText = new Set(), sel = null, selHist = [], descTimer = null;
   const SEP = () => Dataset.CFG.MULTI_SEP;
   const item = (id) => S.ds.items.find((i) => i.id === id);
   const toks = (it, k) => String(it[k] ?? "").split(SEP()).map((x) => x.trim()).filter(Boolean);
@@ -30,7 +30,7 @@
 
   /* ---------------- carga: aplica ediciones y descripciones guardadas ---------------- */
   function onLoad(ds, name) {
-    file = name; desc = lsGet("desc:" + name, {}); edits = lsGet("ed:" + name, {}); hist = []; redoS = []; sel = null;
+    file = name; desc = lsGet("desc:" + name, {}); edits = lsGet("ed:" + name, {}); hist = []; redoS = []; sel = null; selHist = [];
     let changed = false;
     ds.items.forEach((it) => { const e = edits[it.id]; if (e) for (const f in e) { it[f] = e[f].to; changed = true; } });
     if (changed) ds = Dataset.analyze(ds.items, { currentYear: A.CY, file: name, format: ds.report.format, delimiter: ds.report.delimiter });
@@ -70,18 +70,28 @@
   function commit() { lsSet("ed:" + file, edits); badge(); A.reanalyze(); refreshSel(); }
   function badge() {
     const n = Object.values(edits).reduce((a, e) => a + Object.keys(e).length, 0);
-    $("edit-badge").textContent = n ? `✎ ${n} cambio(s)` : "";
+    $("edit-badge").textContent = n ? `${n} cambio(s)` : "";
     $("undo").disabled = !hist.length; $("redo").disabled = !redoS.length; $("discard").disabled = !n;
   }
 
   /* ---------------- selección y ficha ---------------- */
-  function showItem(id) { sel = { t: "item", id }; A.setPinned(new Set([id])); render(); }
+  // historial de selección: "Volver" regresa al autor o categoría anterior
+  const go = (n) => { if (sel && JSON.stringify(sel) !== JSON.stringify(n)) { selHist.push(sel); if (selHist.length > 30) selHist.shift(); } sel = n; };
+  const headBar = () => `<div class="dhead">${selHist.length ? '<button class="icon bk" data-act="back" title="Volver a la selección anterior (Alt+←)" aria-label="Volver"><svg class="ic"><use href="#i-back"/></svg></button>' : ""}<span class="spacer"></span><button class="icon bk" data-act="close" title="Cerrar (Esc)" aria-label="Cerrar"><svg class="ic"><use href="#i-close"/></svg></button></div>`;
+  function goBack() {
+    if (!sel) return false;
+    let prev = null;
+    while (selHist.length) { const c = selHist.pop(); if (c.t === "item" ? item(c.id) : idsOf(c.dim, c.value).size) { prev = c; break; } }
+    if (!prev) return false;
+    sel = prev; A.setPinned(sel.t === "item" ? new Set([sel.id]) : idsOf(sel.dim, sel.value)); render(); return true;
+  }
+  function showItem(id) { go({ t: "item", id }); A.setPinned(new Set([id])); render(); }
   function showNode(dim, value) {
     const ids = idsOf(dim, value);
     if (dim === "name" && ids.size === 1) return showItem([...ids][0]);
-    sel = { t: "node", dim, value }; A.setPinned(ids); render();
+    go({ t: "node", dim, value }); A.setPinned(ids); render();
   }
-  function close() { sel = null; $("detail").classList.remove("open"); A.setPinned(null); }
+  function close() { sel = null; selHist = []; $("detail").classList.remove("open"); A.setPinned(null); }
   function refreshSel() {
     if (!sel) return;
     if (sel.t === "item") { if (!item(sel.id)) return close(); A.setPinned(new Set([sel.id])); }
@@ -101,15 +111,15 @@
     const dimField = (d) => {
       const cur = toks(it, d.key), vals = d.values.map((v) => v.value).filter((v) => v !== "(vacío)");
       let ctl;
-      if (d.multi) ctl = `<div class="chips">${vals.map((v) => `<label class="ck"><input type="checkbox" data-f="${esc(d.key)}" data-v="${esc(v)}" ${cur.includes(v) ? "checked" : ""}>${esc(v)}</label>`).join("")}<button class="mini" data-new="${esc(d.key)}" title="Nueva categoría">＋</button></div>`;
+      if (d.multi) ctl = `<div class="chips">${vals.map((v) => `<label class="ck"><input type="checkbox" data-f="${esc(d.key)}" data-v="${esc(v)}" ${cur.includes(v) ? "checked" : ""}>${esc(v)}</label>`).join("")}<button class="mini icon" data-new="${esc(d.key)}" title="Nueva categoría" aria-label="Nueva categoría"><svg class="ic"><use href="#i-plus"/></svg></button></div>`;
       else {
         const all = !cur[0] || vals.includes(cur[0]) ? vals : [cur[0], ...vals];
-        ctl = `<select data-f="${esc(d.key)}"><option value="">(vacío)</option>${all.map((v) => `<option ${v === cur[0] ? "selected" : ""}>${esc(v)}</option>`).join("")}<option value="__new">➕ nueva categoría…</option></select>`;
+        ctl = `<select data-f="${esc(d.key)}"><option value="">(vacío)</option>${all.map((v) => `<option ${v === cur[0] ? "selected" : ""}>${esc(v)}</option>`).join("")}<option value="__new">Nueva categoría…</option></select>`;
       }
       const ds = cur.map((v) => descOf(d.key, v)).filter(Boolean).join(" · ");
       return `<div class="fld"><label>${esc(d.label)}</label>${ctl}${ds ? `<div class="hint">${esc(trunc(ds, 260))}</div>` : ""}</div>`;
     };
-    $("detail").innerHTML = `<button class="x" data-act="close" title="Cerrar (Esc)">✕</button>
+    $("detail").innerHTML = `${headBar()}
       <input class="title" data-f="name" value="${esc(it.name || "")}" aria-label="Nombre">
       <div class="sub">${esc(lifeText(it))}</div>
       ${(L.warnings || []).map((w) => `<span class="chip w">${esc(A.WARN[w] || w)}</span>`).join("")}
@@ -122,7 +132,7 @@
   function renderNode() {
     const d = dimOf(sel.dim), ids = idsOf(sel.dim, sel.value);
     const members = S.ds.items.filter((i) => ids.has(i.id)).sort((a, b) => nameOf(a).localeCompare(nameOf(b), "es"));
-    $("detail").innerHTML = `<button class="x" data-act="close" title="Cerrar (Esc)">✕</button>
+    $("detail").innerHTML = `${headBar()}
       <div class="sub">${esc(d ? d.label : sel.dim)}</div>
       <h2><i class="dot" style="background:${A.color()(sel.value)}"></i>${esc(sel.value)}</h2>
       <div class="sub">${ids.size} ítem(s)</div>
@@ -140,6 +150,7 @@
       if (v && v.trim()) { setField(sel.id, b.dataset.new, [...toks(item(sel.id), b.dataset.new), v.trim()].join(SEP())); commit(); }
     }));
     box.querySelectorAll("[data-act=close]").forEach((b) => b.addEventListener("click", close));
+    box.querySelectorAll("[data-act=back]").forEach((b) => b.addEventListener("click", goBack));
     box.querySelectorAll(".mem").forEach((b) => b.addEventListener("click", () => showItem(b.dataset.id)));
     const ta = box.querySelector("[data-desc]");
     if (ta) ta.addEventListener("input", () => {
@@ -188,12 +199,12 @@
     const texts = [...showText].map((c) => it[c] ? `<div><span class="m">${esc(c)}:</span> ${esc(trunc(it[c], 170))}</div>` : "").join("");
     const cats = A.cols().filter((c) => c !== "name").map((c) => toks(it, c).join(", ")).filter(Boolean).join(" · ");
     const w = ((it.__life || {}).warnings || []).map((x) => A.WARN[x] || x);
-    tip(ev, `<b>${esc(nameOf(it))}</b><div class="m">${esc(lifeText(it))}</div>${cats ? `<div>${esc(cats)}</div>` : ""}${texts}${w.length ? `<div class="warn">⚠ ${esc(w.join(", "))}</div>` : ""}<div class="m">clic: ficha</div>`);
+    tip(ev, `<b>${esc(nameOf(it))}</b><div class="m">${esc(lifeText(it))}</div>${cats ? `<div>${esc(cats)}</div>` : ""}${texts}${w.length ? `<div class="warn">${esc(w.join(", "))}</div>` : ""}<div class="m">clic en el nombre: ficha · clic en la barra: filtrar</div>`);
   }
   function tipNode(ev, d) {
     if (d.col === "name") { const id = [...d.ids][0]; return tipItem(ev, item(id)); }
     const de = descOf(d.col, d.label), dm = dimOf(d.col);
-    tip(ev, `<b>${esc(d.label)}</b><div class="m">${esc(dm ? dm.label : d.col)} · ${d.ids.size} ítem(s)</div>${de ? `<div>${esc(trunc(de, 240))}</div>` : ""}<div class="m">clic: ficha y descripción</div>`);
+    tip(ev, `<b>${esc(d.label)}</b><div class="m">${esc(dm ? dm.label : d.col)} · ${d.ids.size} ítem(s)</div>${de ? `<div>${esc(trunc(de, 240))}</div>` : ""}<div class="m">clic en la etiqueta: ficha · clic en la barra: filtrar</div>`);
   }
   function tipLink(ev, d) {
     const names = [...d.ids].map((i) => nameOf(item(i))).slice(0, 6).join(", ");
@@ -270,5 +281,5 @@
     });
   }
 
-  root.Panel = { init, onLoad, showItem, showNode, close, tipItem, tipNode, tipLink, tipHide, place, extra, hasExtra: () => showText.size > 0, descOf };
+  root.Panel = { init, onLoad, back: goBack, showItem, showNode, close, tipItem, tipNode, tipLink, tipHide, place, extra, hasExtra: () => showText.size > 0, descOf };
 })(typeof window !== "undefined" ? window : globalThis);
