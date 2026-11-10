@@ -239,7 +239,7 @@
     const W = 1100, perCol = d3.max(cols, (c) => [...nodes.values()].filter((n) => n.col === c).length);
     const isName = cols.includes("name");
     const rowH = isName ? (Panel.hasExtra() ? 46 : 34) : 22;
-    const MARGIN = 170, TOP = 30, BOTTOM = 8, NODE_PAD = 12, LABEL_GAP = 4;
+    const MARGIN = 170, TOP = 30, BOTTOM = 18, NODE_PAD = 12, LABEL_GAP = 4;
 
     // --- posiciones X aproximadas por columna (antes del layout) para dimensionar las etiquetas ---
     const colStep = cols.length > 1 ? (W - 2 * MARGIN) / (cols.length - 1) : 0;
@@ -271,72 +271,214 @@
     });
     let H = Math.max(420, perCol * rowH + 60, labelReq + TOP + BOTTOM);
 
-    // --- orden de los nodos dentro de cada columna (control «Orden») ---
+    // --- orden de los nodos dentro de cada columna (control «Orden»): la variable elegida manda en
+    //     SU columna (alfabética; cronológica si es de fechas; por valor si se elige «valor») y las
+    //     demás columnas se reordenan según la posición de sus lazos, para que se crucen lo menos
+    //     posible. Se prueban varios órdenes (media y mediana, en los dos sentidos), gana el de menos
+    //     cruces y se afina con sifting. ---
     const skMode = S.skSort || "value", reverse = !!S.skDesc;
-    const dimOrder = new Map(((S.ds.dimensions.find((d) => d.key === skMode) || {}).values || []).map((v, i) => [v.value, i]));
-    const nodeCmp = (a, b) => {
-      if (a.col !== b.col) return 0;
+    const cmpText = (a, b) => String(a).localeCompare(String(b), "es");
+    const ownCmp = (a, b) => {
       let c;
       if (skMode === "value") c = isTime(a.col) ? Dataset.timeValue(a.label) - Dataset.timeValue(b.label) // fechas cronológicas
         : b.value - a.value;                                                                              // mayor primero
-      else if (skMode === "name") c = String(a.label).localeCompare(String(b.label), "es");
       else if (isTime(skMode)) {
         const ta = Dataset.timeValue(a.label), tb = Dataset.timeValue(b.label);
-        c = ta !== tb ? ta - tb : String(a.label).localeCompare(String(b.label), "es");
+        c = ta !== tb ? ta - tb : cmpText(a.label, b.label);
       }
-      else {
-        // orden propio de la variable (el mismo que usa la leyenda)
-        const ia = dimOrder.has(a.label) ? dimOrder.get(a.label) : 1e6;
-        const ib = dimOrder.has(b.label) ? dimOrder.get(b.label) : 1e6;
-        c = ia - ib || String(a.label).localeCompare(String(b.label), "es");
-      }
+      else c = cmpText(a.label, b.label); // alfabético
       return reverse ? -c : c;
     };
 
-    // Maqueta el sankey. `pad` reserva en cada borde el medio bloque que la etiqueta más alta
-    // sobresale de su barra (d3 fija el primer y el último nodo a los bordes), para que la
-    // primera y la última etiqueta quepan centradas en su nodo.
-    const layout = (h, pad) => d3.sankey().nodeId((d) => d.id).nodeWidth(14).nodePadding(NODE_PAD)
-      .nodeSort(nodeCmp)
-      .extent([[MARGIN, TOP + pad.top], [W - MARGIN, h - BOTTOM - pad.bottom]])({ nodes: [...nodes.values()], links: [...links.values()] });
+    // columna ancla: la de la variable elegida; en «valor» no hay variable, así que la del color
+    // (o la primera) y el resto se ordena por flujo igualmente.
+    let anchor = skMode === "value" ? -1 : cols.indexOf(skMode);
+    if (anchor < 0) anchor = cols.indexOf(S.colorKey);
+    if (anchor < 0) anchor = 0;
 
-    // Etiquetas: cada una centrada en su barra. Si choca con la anterior, baja la BARRA junto con
-    // su etiqueta (las alturas no cambian y los lazos se redibujan con la barra). Nunca se separan
-    // una de otra: lo que no quepa se devuelve y el gráfico crece y se remaqueta.
+    const colNodes = new Map(cols.map((c) => [c, [...nodes.values()].filter((n) => n.col === c)]));
+    const own = new Map(cols.map((c) => [c, [...colNodes.get(c)].sort(ownCmp).map((n) => n.id)]));
+    const outL = new Map(), inL = new Map(), pushL = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
+    [...links.values()].forEach((L) => {
+      const s = nodes.get(L.source), t = nodes.get(L.target);
+      if (!s || !t) return;
+      pushL(outL, s.id, { id: t.id, w: L.value });
+      pushL(inL, t.id, { id: s.id, w: L.value });
+    });
+    const relRank = (ids) => new Map(ids.map((id, i) => [id, ids.length > 1 ? i / (ids.length - 1) : 0.5]));
+
+    // Reordena la columna `c` por la posición (media o mediana, ponderadas por flujo) de sus lazos en
+    // la columna vecina ya ordenada (`via` dice si miramos los que entran o los que salen). La mediana
+    // es más robusta cuando un lazo domina; la media, más suave. Se prueban las dos.
+    const flowOrder = (c, near, via, median) => {
+      const adj = via === "in" ? inL : outL, score = new Map();
+      colNodes.get(c).forEach((n) => {
+        const ws = [];
+        (adj.get(n.id) || []).forEach((L2) => {
+          const r = near.get(L2.id);
+          if (r != null) ws.push([r, L2.w]);
+        });
+        if (!ws.length) { score.set(n.id, null); return; }
+        if (!median) { let s = 0, w = 0; ws.forEach(([r, w2]) => { s += r * w2; w += w2; }); score.set(n.id, w > 0 ? s / w : null); return; }
+        ws.sort((a, b) => a[0] - b[0]);
+        let acc = 0, med = ws[ws.length - 1][0];
+        const half = ws.reduce((s, x) => s + x[1], 0) / 2;
+        for (const [r, w2] of ws) { acc += w2; if (acc >= half) { med = r; break; } }
+        score.set(n.id, med);
+      });
+      return [...colNodes.get(c)].sort((a, b) => {
+        const A = score.get(a.id), B = score.get(b.id);
+        if (A != null && B != null && Math.abs(A - B) > 1e-6) return A - B;
+        if (A != null && B == null) return -1;
+        if (A == null && B != null) return 1;
+        return ownCmp(a, b); // desempate: el orden propio de la columna
+      }).map((n) => n.id);
+    };
+
+    // Una pasada desde la columna ancla: hacia la derecha (de padre a ramas) o hacia la izquierda
+    // (de ramas a padre).
+    const sweep = (ord, dir, median) => {
+      if (dir > 0) for (let i = anchor + 1; i < cols.length; i++) ord.set(cols[i], flowOrder(cols[i], relRank(ord.get(cols[i - 1])), "in", median));
+      else for (let i = anchor - 1; i >= 0; i--) ord.set(cols[i], flowOrder(cols[i], relRank(ord.get(cols[i + 1])), "out", median));
+      return ord;
+    };
+
+    // Cruces reales entre columnas vecinas para un orden dado (aquí hay pocas decenas de lazos).
+    const crossings = (ord) => {
+      let total = 0;
+      for (let i = 0; i + 1 < cols.length; i++) {
+        const pa = new Map(ord.get(cols[i]).map((id, k) => [id, k])), pb = new Map(ord.get(cols[i + 1]).map((id, k) => [id, k])), e = [];
+        [...links.values()].forEach((L) => {
+          const s = nodes.get(L.source), t = nodes.get(L.target);
+          if (!s || !t || s.col !== cols[i] || t.col !== cols[i + 1]) return;
+          const a = pa.get(s.id), b = pb.get(t.id);
+          if (a != null && b != null) e.push([a, b]);
+        });
+        e.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
+        for (let m = 0; m < e.length; m++) for (let k = m + 1; k < e.length; k++) if (e[k][1] < e[m][1]) total++;
+      }
+      return total;
+    };
+
+    // Sifting: mueve cada nodo de su columna a la posición que deja menos cruces con sus vecinas
+    // (lazos que entran y que salen). Al mover un nodo sólo cambia su orden respecto a los demás de
+    // su propia columna, así que cada prueba cuesta O(grado²) y una pasada completa es barata.
+    const sift = (ord) => {
+      const o = new Map(cols.map((c) => [c, [...ord.get(c)]]));
+      for (let pass = 0; pass < 3; pass++) {
+        let moved = false;
+        for (let ci = 0; ci < cols.length; ci++) {
+          const c = cols[ci], cL = ci > 0 ? cols[ci - 1] : null, cR = ci + 1 < cols.length ? cols[ci + 1] : null;
+          const pL = cL ? new Map(o.get(cL).map((id, i) => [id, i])) : null;
+          const pR = cR ? new Map(o.get(cR).map((id, i) => [id, i])) : null;
+          const li = new Map(), ri = new Map(); // nodo → índices de sus lazos en la columna vecina
+          [...links.values()].forEach((L) => {
+            const s = nodes.get(L.source), t = nodes.get(L.target);
+            if (!s || !t) return;
+            if (pL && s.col === cL && t.col === c) pushL(li, t.id, pL.get(s.id));
+            if (pR && s.col === c && t.col === cR) pushL(ri, s.id, pR.get(t.id));
+          });
+          // cruces entre los lazos de `n` y los de `m` según quién va primero
+          const crossNM = (n, m, nFirst) => {
+            const sgn = nFirst ? 1 : -1;
+            let k = 0;
+            const A = li.get(n) || [], B = li.get(m) || [], A2 = ri.get(n) || [], B2 = ri.get(m) || [];
+            for (const a of A) for (const b of B) if ((a - b) * sgn > 0) k++;
+            for (const a of A2) for (const b of B2) if ((a - b) * sgn > 0) k++;
+            return k;
+          };
+          const order = o.get(c);
+          for (let k = 0; k < order.length; k++) {
+            const id = order[k], others = order.filter((x) => x !== id);
+            const pre = new Array(others.length + 1).fill(0), post = new Array(others.length + 1).fill(0);
+            for (let m = 0; m < others.length; m++) pre[m + 1] = pre[m] + crossNM(id, others[m], false); // id detrás
+            for (let m = others.length - 1; m >= 0; m--) post[m] = post[m + 1] + crossNM(id, others[m], true); // id delante
+            let bk = 0, bc = Infinity;
+            for (let p2 = 0; p2 <= others.length; p2++) { const v = pre[p2] + post[p2]; if (v < bc) { bc = v; bk = p2; } }
+            if (bk !== k) { others.splice(bk, 0, id); order.length = 0; order.push(...others); moved = true; }
+          }
+        }
+        if (!moved) break;
+      }
+      return o;
+    };
+
+    // Candidatos: media y mediana, cada una barriendo en los dos sentidos, más el orden propio (así
+    // nunca queda peor que el orden de la variable). Gana el de menos cruces y luego se afina.
+    const cands = [
+      sweep(sweep(new Map(own), +1, false), -1, false), // media, padre → ramas → padre
+      sweep(sweep(new Map(own), -1, false), +1, false), // media, ramas → padre → ramas
+      sweep(sweep(new Map(own), +1, true), -1, true),   // mediana, padre → ramas → padre
+      sweep(sweep(new Map(own), -1, true), +1, true),   // mediana, ramas → padre → ramas
+      own,
+    ];
+    let best = cands[0], bestX = Infinity;
+    cands.forEach((o) => { const x = crossings(o); if (x < bestX) { best = o; bestX = x; } });
+    const refined = sift(best);
+    if (crossings(refined) < bestX) best = refined;
+    cols.forEach((c) => best.get(c).forEach((id, i) => { const n = nodes.get(id); if (n) n.__rank = i; }));
+    const nodeCmp = (a, b) => (a.col !== b.col ? 0 : (a.__rank ?? 0) - (b.__rank ?? 0));
+
+    // Maqueta el sankey. El marco no reserva márgenes extra: el reparto vertical de abajo ya deja
+    // entrar la primera y la última etiqueta.
+    const layout = (h) => d3.sankey().nodeId((d) => d.id).nodeWidth(14).nodePadding(NODE_PAD)
+      .nodeSort(nodeCmp)
+      .extent([[MARGIN, TOP], [W - MARGIN, h - BOTTOM]])({ nodes: [...nodes.values()], links: [...links.values()] });
+
+    // Reparto vertical de cada columna en UNA pasada: se buscan los centros de barra más cercanos a
+    // los del layout que dejen sitio a cada bloque (etiqueta o barra, el mayor de los dos), o sea una
+    // regresión isotónica (PAVA), exacta y O(n). Antes se crecía H y se remaquetaba en bucle y no
+    // convergía: d3 estira las alturas de las barras para llenar el marco, así que agrandar el
+    // gráfico se comía justo el hueco que necesitaban las etiquetas (~20 pasadas por render).
     const placeLabels = (graph) => {
-      const pad = { top: 0, bottom: 0 };
       let need = 0;
       cols.forEach((c) => {
         const arr = graph.nodes.filter((n) => n.col === c).sort((a, b) => a.y0 - b.y0);
-        if (!arr.length) return;
-        const first = arr[0], last = arr[arr.length - 1];
-        pad.top = Math.max(pad.top, (first.__blockHeight - (first.y1 - first.y0)) / 2);
-        pad.bottom = Math.max(pad.bottom, (last.__blockHeight - (last.y1 - last.y0)) / 2);
-        let prev = -Infinity;
-        arr.forEach((n) => {
-          const bh = n.__blockHeight;
-          let top = (n.y0 + n.y1 - bh) / 2;
-          if (top < prev + LABEL_GAP) {
-            const d = prev + LABEL_GAP - top;
-            n.y0 += d; n.y1 += d; top += d;
+        const cnt = arr.length;
+        if (!cnt) return;
+        const m = arr.map((n) => Math.max(n.__blockHeight, n.y1 - n.y0)); // alto a respetar
+        const off = [0]; // separación mínima acumulada respecto al primer bloque
+        for (let i = 1; i < cnt; i++) off.push(off[i - 1] + (m[i - 1] + m[i]) / 2 + LABEL_GAP);
+        // PAVA sobre u = centro - off: z no decreciente que minimiza Σ (z - u)²
+        const z = [], w = [];
+        for (let i = 0; i < cnt; i++) {
+          z.push((arr[i].y0 + arr[i].y1) / 2 - off[i]); w.push(1);
+          while (z.length > 1 && z[z.length - 2] > z[z.length - 1]) {
+            const a = z.length - 2, W = w[a] + w[a + 1], S = z[a] * w[a] + z[a + 1] * w[a + 1];
+            z[a] = S / W; w[a] = W; z.length--; w.length--;
           }
-          n.__labelTop = top; prev = top + bh;
+        }
+        const zz = [];
+        z.forEach((v, k) => { for (let j = 0; j < w[k]; j++) zz.push(v); });
+        // Desplazamiento de la pila para entrar en el marco: si cabe, el mínimo que la deja dentro;
+        // si no cabe (barras más altas que sus etiquetas), se ancla arriba y el sobrante se come el
+        // margen inferior. Sólo si lo desborda se remaqueta con más alto.
+        const top0 = zz[0] - m[0] / 2, bot0 = zz[cnt - 1] + off[cnt - 1] + m[cnt - 1] / 2;
+        const span = bot0 - top0, avail = H - BOTTOM - TOP, fits = span <= avail;
+        const shift = fits ? Math.min(Math.max(0, TOP - top0), H - BOTTOM - bot0) : TOP - top0;
+        if (!fits) need = Math.max(need, span - avail);
+        arr.forEach((n, i) => {
+          const ctr = zz[i] + off[i] + shift, h = n.y1 - n.y0;
+          n.y0 = ctr - h / 2; n.y1 = ctr + h / 2;
+          n.__labelTop = ctr - n.__blockHeight / 2;
         });
-        need = Math.max(need, prev - (H - BOTTOM));
       });
-      return { top: Math.max(0, pad.top), bottom: Math.max(0, pad.bottom), need: Math.max(0, need) };
+      return Math.max(0, need);
     };
 
-    // Repite la maqueta hasta que los márgenes quedan estables y no falta altura.
-    let g, pad = { top: 0, bottom: 0 };
-    for (let pass = 0; ; pass++) {
-      g = layout(H, pad);
-      const r = placeLabels(g);
-      const stable = Math.abs(r.top - pad.top) < 0.5 && Math.abs(r.bottom - pad.bottom) < 0.5;
-      if (r.need < 1 && (stable || pass >= 4)) break;
-      pad = { top: r.top, bottom: r.bottom };
-      if (r.need > 0) H += r.need + 1;
-    }
+    // Al mover las barras hay que reanudar los extremos de los lazos (d3 los fija en el layout).
+    const syncLinks = (graph) => graph.nodes.forEach((n) => {
+      n.sourceLinks.sort((a, b) => a.target.y0 - b.target.y0);
+      n.targetLinks.sort((a, b) => a.source.y0 - b.source.y0);
+      let sy = n.y0, ty = n.y0;
+      n.sourceLinks.forEach((L) => { L.y0 = sy + L.width / 2; sy += L.width; });
+      n.targetLinks.forEach((L) => { L.y1 = ty + L.width / 2; ty += L.width; });
+    });
+
+    // Una maqueta (y una segunda sólo si el sobrante no cabe en el margen inferior).
+    let g = layout(H), needH = placeLabels(g);
+    if (needH > BOTTOM) { H += Math.ceil(needH); g = layout(H); placeLabels(g); }
+    syncLinks(g);
 
     const svg = host.append("svg").attr("viewBox", [0, 0, W, H]).attr("width", "100%")
       .style("aspect-ratio", `${W} / ${H}`).attr("role", "img");
