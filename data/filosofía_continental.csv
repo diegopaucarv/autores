@@ -1,4 +1,4 @@
-group,nombre,pais,continente,nacimiento,muerte,concepto clave,obra emblematica
+group,nombre,pais,continente,nacimiento,muerte,concepto_clave,obra_emblematica
 Post-Estructuralismo,Michel Foucault,Francia,Europa,1926,1984,"Biopolítica, gubernamentalidad y microfísica del poder",Vigilar y castigar (1975)
 Post-Estructuralismo,Jacques Derrida,Argelia / Francia,África / Europa,1930,2004,"Deconstrucción, diférance e ilimitación del texto social",De la gramatología (1967)
 Post-Estructuralismo,Gilles Deleuze,Francia,Europa,1925,1995,"Esquizofrenálisis, ensamblajes y ontología de la diferencia",Mil mesetas (con F. Guattari) (1980)
@@ -26,10 +26,10 @@ Fenomenologia Social y Teoria de la Accion,Georg Henrik von Wright,Finlandia,Eur
 Fenomenologia Social y Teoria de la Accion,Karl Mannheim,Hungría / Reino Unido,Europa,1893,1947,"Sociología del conocimiento, problemática de las generaciones, ideología y utopía",Ideología y utopía (1929)
 Enactivismo y Cognicion Encarnada 4E,Shaun Gallagher,Estados Unidos,América,1948,presente,"Cognición 4E, Hipótesis de la Práctica Narrativa (NPH) e intercorporalidad",How the Body Shapes the Mind (2005)
 Enactivismo y Cognicion Encarnada 4E,Andy Clark,Reino Unido,Europa,1957,presente,"Mente extendida, procesamiento predictivo y andamiaje epistémico",Surfing Uncertainty (2016)
-Enactivismo y Cognicion Encarnada 4E,Giovanna Colombetti,Italia / Reino Unido,Europa,n.d.,presente,"Ciencia afectiva enactivista, cuerpo sintiente (Feeling Body)",The Feeling Body (2014)
+Enactivismo y Cognicion Encarnada 4E,Giovanna Colombetti,Italia / Reino Unido,Europa,1978,presente,"Ciencia afectiva enactivista, cuerpo sintiente (Feeling Body)",The Feeling Body (2014)
 Enactivismo y Cognicion Encarnada 4E,Jakob Hohwy,Dinamarca / Australia,Europa / Oceanía,1967,presente,"Mente predictiva, principio de energía libre e inferencia activa",The Predictive Mind (2013)
 Enactivismo y Cognicion Encarnada 4E,Michael Tomasello,Estados Unidos,América,1950,presente,"Evolución de la agencia, intencionalidad compartida y colectiva",The Evolution of Agency (2022)
-Neurosociologia y Ciencia Cognitiva Social,David Franks,Estados Unidos,América,1931,presente,"Neurosociología, fundamentos del cerebro social, emociones inconscientes",Neurosociology (2010)
+Neurosociologia y Ciencia Cognitiva Social,David Franks,Estados Unidos,América,1931,2026,"Neurosociología, fundamentos del cerebro social, emociones inconscientes",Neurosociology (2010)
 Neurosociologia y Ciencia Cognitiva Social,Simon Baron-Cohen,Reino Unido,Europa,1958,presente,"Teoría de la Mente (ToM), ceguera mental, mecanismo de sistematización",The Pattern Seekers (2020)
 Postcolonial Decolonial,Frantz Fanon,Martinica / Francia / Argelia,América / Europa / África,1925,1961,"Sociogénesis de la alienación colonial, zona del no-ser",Los condenados de la tierra (1961)
 Postcolonial Decolonial,Edward Said,Palestina / Estados Unidos,Asia / América,1935,2003,"Orientalismo, lectura contrapuntística y poder discursivo imperial",Orientalismo (1978)
@@ -43,7 +43,7 @@ Postcolonial Decolonial,Walter Mignolo,Argentina / Estados Unidos,América,1941,
 Postcolonial Decolonial,Silvia Rivera Cusicanqui,Bolivia,América,1949,presente,"Sociología de la imagen, colonialismo interno y lo ch'ixi",Oprimidos pero no vencidos (1984)
 Postcolonial Decolonial,Sara Ahmed,Reino Unido / Australia,Europa / Oceanía,1969,presente,"Economía afectiva de las emociones, fenomenología queer",La promesa de la felicidad (2010)
 Teoria Critica,Theodor W. Adorno,Alemania,Europa,1903,1969,"Industria cultural, dialéctica negativa y crítica de la razón instrumental",Dialéctica de la Ilustración (1944)
-Teoria Critica,Jürgen Habermas,Alemania,Europa,1929,presente,"Acción comunicativa, esfera pública y colonización del mundo de la vida",Teoría de la acción comunicativa (1981)
+Teoria Critica,Jürgen Habermas,Alemania,Europa,1929,2026,"Acción comunicativa, esfera pública y colonización del mundo de la vida",Teoría de la acción comunicativa (1981)
 Teoria Critica,Axel Honneth,Alemania,Europa,1949,presente,"Teoría del reconocimiento, patologías sociales e invisibilización",La lucha por el reconocimiento (1992)
 Teoria Critica,Slavoj Žižek,Eslovenia,Europa,1949,presente,"Cinismo ideológico, fantasía política y crítica del capitalismo global",El sublime objeto de la ideología (1989)
 Teoria Critica,Frantz Fanon,Martinica / Argelia,América / África,1925,1961,Crítica anticolonialista de la subjetividad y la alienación racial,"Piel negra, máscaras blancas (1952)"
@@ -98,5 +98,5 @@ Realismo Metafisico Especulativo,Reza Negarestani,Irán / Estados Unidos,Asia / 
 Realismo Metafisico Especulativo,Timothy Morton,Reino Unido / Estados Unidos,Europa / América,1968,presente,"Ontología Orientada a Objetos (OOO), retirada del objeto",Realist Magic (2013)
 Realismo Metafisico Especulativo,Isabelle Stengers,Bélgica,Europa,1949,presente,Constructivismo especulativo y filosofía procesual whiteheadiana,Penser avec Whitehead (2002)
 Realismo Metafisico Especulativo,Graham Harman,Estados Unidos,América,1968,presente,"Ontología Orientada a Objetos (OOO), cuádruple objeto",Tool-Being (2002)
-Realismo Metafisico Especulativo,Levi Bryant,Estados Unidos,América,n.d.,presente,"Ontocartografía, la democracia de los objetos",The Democracy of Objects (2011)
+Realismo Metafisico Especulativo,Levi Bryant,Estados Unidos,América,1978,presente,"Ontocartografía, la democracia de los objetos",The Democracy of Objects (2011)
 Realismo Metafisico Especulativo,Quentin Meillassoux,Francia,Europa,1967,presente,"Ancorrelacionismo, hipercontingencia y ancestralidad del mundo",Después de la finitud (2006)
