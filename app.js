@@ -224,8 +224,7 @@
       const nextX0 = idx + 1 < cols.length ? approxX0(idx + 1) : null;
       let availW = first ? (x0 - 10) : (nextX0 != null ? nextX0 - 14 - labelX : (W - 10) - labelX);
       availW = Math.max(70, Math.min(260, availW));
-      const text = nameCol ? n.label : `${n.label} (${n.ids.size})`;
-      n.__lines = wrapLabel(text, availW, 2);
+      n.__lines = wrapLabel(n.label, availW, 2);
       n.__anchor = first ? "end" : "start";
       let extraLines = nameCol ? 1 + (Panel.hasExtra() ? 1 : 0) : 0;
       n.__blockLines = n.__lines.length + extraLines;
