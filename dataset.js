@@ -12,7 +12,7 @@
     MULTI_SEP: "|",
     MIN_UNIQUE: 2,
     MAX_UNIQUE: 100,
-    MAX_AVG_LEN: 70,
+    MAX_AVG_LEN: 100,
     MIN_COVERAGE: 0.5,
   };
 
