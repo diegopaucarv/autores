@@ -460,6 +460,21 @@
                 justify-content: flex-start;
                 border-color: transparent;
             }
+            .menu-pop-wide {
+                min-width: 248px;
+            }
+            .menu-pop-wide .menu-label {
+                margin-top: var(--s2);
+            }
+            .menu-pop-wide .menu-label:first-child {
+                margin-top: 0;
+            }
+            .menu-pop-wide button .ic {
+                flex: 0 0 auto;
+            }
+            .menu-pop-wide .badge {
+                align-self: flex-start;
+            }
             .menu-pop label {
                 display: flex;
                 gap: var(--s2);
@@ -961,102 +976,45 @@
                 >
                     <svg class="ic"><use href="#i-plus" /></svg><span class="lbl-text">Nuevo autor</span>
                 </button>
-                <span class="divider" aria-hidden="true"></span>
-                <div class="grp" role="group" aria-label="Vista">
-                    <button
-                        id="view-back"
-                        class="icon"
-                        type="button"
-                        title="Volver a la vista anterior (Alt+←)"
-                        aria-label="Volver a la vista anterior"
-                        disabled
-                    >
-                        <svg class="ic"><use href="#i-back" /></svg>
-                    </button>
-                    <button
-                        id="view-reset"
-                        class="icon"
-                        type="button"
-                        title="Restablecer vista (columnas, color, cohorte, orden)"
-                        aria-label="Restablecer vista"
-                        disabled
-                    >
-                        <svg class="ic"><use href="#i-reset" /></svg>
-                    </button>
-                </div>
-                <div class="grp" role="group" aria-label="Edición de datos">
-                    <button
-                        id="undo"
-                        class="icon"
-                        type="button"
-                        title="Deshacer (Ctrl+Z)"
-                        aria-label="Deshacer"
-                        disabled
-                    >
-                        <svg class="ic"><use href="#i-undo" /></svg>
-                    </button>
-                    <button
-                        id="redo"
-                        class="icon"
-                        type="button"
-                        title="Rehacer (Ctrl+Y)"
-                        aria-label="Rehacer"
-                        disabled
-                    >
-                        <svg class="ic"><use href="#i-redo" /></svg>
-                    </button>
-                    <button
-                        id="discard"
-                        class="icon"
-                        type="button"
-                        title="Descartar todos los cambios de este archivo (autores añadidos y eliminados incluidos)"
-                        aria-label="Descartar todos los cambios"
-                        disabled
-                    >
-                        <svg class="ic"><use href="#i-trash" /></svg>
-                    </button>
-                    <span class="badge" id="edit-badge"></span>
-                </div>
-                <details class="menu">
+                <details class="menu toolbar-menu">
                     <summary
                         class="icon"
-                        title="Exportar datos"
-                        aria-label="Exportar datos"
+                        title="Más acciones"
+                        aria-label="Más acciones"
                     >
                         <svg class="ic"><use href="#i-more" /></svg>
                     </summary>
-                    <div class="menu-pop" role="menu">
+                    <div class="menu-pop menu-pop-wide" role="menu">
+                        <span class="menu-label">Vista</span>
+                        <button id="view-back" type="button" role="menuitem" title="Volver a la vista anterior (Alt+←)" disabled>
+                            <svg class="ic"><use href="#i-back" /></svg> Vista anterior
+                        </button>
+                        <button id="view-reset" type="button" role="menuitem" title="Restablecer vista" disabled>
+                            <svg class="ic"><use href="#i-reset" /></svg> Restablecer vista
+                        </button>
+                        <span class="menu-label">Edición</span>
+                        <button id="undo" type="button" role="menuitem" title="Deshacer (Ctrl+Z)" disabled>
+                            <svg class="ic"><use href="#i-undo" /></svg> Deshacer
+                        </button>
+                        <button id="redo" type="button" role="menuitem" title="Rehacer (Ctrl+Y)" disabled>
+                            <svg class="ic"><use href="#i-redo" /></svg> Rehacer
+                        </button>
+                        <button id="discard" type="button" role="menuitem" title="Descartar todos los cambios" disabled>
+                            <svg class="ic"><use href="#i-trash" /></svg> Descartar cambios
+                        </button>
+                        <span class="badge" id="edit-badge"></span>
                         <span class="menu-label">Exportar</span>
                         <button id="dl-csv" type="button" role="menuitem">Datos en CSV</button>
-                        <button id="dl-json" type="button">
-                            Datos en JSON
-                        </button>
-                        <button
-                            id="meta-out"
-                            type="button"
-                            title="Descripciones y cambios → .meta.json"
-                        >
-                            Notas (.meta.json)
-                        </button>
-                        <button
-                            type="button"
-                            onclick="document.getElementById('meta-in').click()"
-                        >
-                            Importar notas…
-                        </button>
+                        <button id="dl-json" type="button" role="menuitem">Datos en JSON</button>
+                        <button id="meta-out" type="button" role="menuitem" title="Descripciones y cambios → .meta.json">Notas (.meta.json)</button>
+                        <button type="button" role="menuitem" onclick="document.getElementById('meta-in').click()">Importar notas…</button>
                         <input type="file" id="meta-in" accept=".json" hidden />
+                        <span class="menu-label">Preferencias</span>
+                        <button id="theme" type="button" role="menuitem" title="Cambiar tema">
+                            <svg class="ic ic-moon"><use href="#i-moon" /></svg><svg class="ic ic-sun"><use href="#i-sun" /></svg> Cambiar tema
+                        </button>
                     </div>
                 </details>
-                <button
-                    id="theme"
-                    class="icon"
-                    type="button"
-                    title="Cambiar tema"
-                    aria-label="Cambiar tema"
-                >
-                    <svg class="ic ic-moon"><use href="#i-moon" /></svg
-                    ><svg class="ic ic-sun"><use href="#i-sun" /></svg>
-                </button>
             </div>
         </header>
 
