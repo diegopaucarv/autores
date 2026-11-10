@@ -365,15 +365,21 @@
                 font-variant-numeric: tabular-nums;
                 color: var(--ink);
             }
+            /* El SVG se dibuja a su tamaño natural (viewBox 1:1), sin escalarlo al
+               contenedor: si no cabe, el panel se desplaza en horizontal en vez de
+               encoger el gráfico y sus etiquetas. */
             .canvas {
                 overflow-x: auto;
+                overflow-y: hidden;
+                scrollbar-color: var(--rule) transparent;
             }
             .canvas svg {
                 display: block;
-                width: 100%;
+                width: auto;
                 height: auto;
+                max-width: none;
                 min-width: var(--chart-min);
-                scrollbar-color: var(--rule) transparent;
+                margin-inline: auto;
             }
             #timeline {
                 max-height: 560px;
@@ -563,11 +569,8 @@
             }
 
             /* ===== 6. Gráficos (SVG) ===== */
-            #sankey .lbl {
-                font-size: var(--t0);
-            }
             .lbl {
-                font-size: var(--t1);
+                font-size: var(--t0);
                 font-weight: var(--w2);
                 fill: var(--ink);
                 paint-order: stroke;
@@ -582,7 +585,7 @@
             }
             .colhead,
             .tl-head {
-                font-size: var(--t1);
+                font-size: var(--t0);
                 font-weight: var(--w2);
                 fill: var(--ink-2);
             }
@@ -591,7 +594,7 @@
             }
             .tick text {
                 fill: var(--ink-3);
-                font-size: var(--t1);
+                font-size: var(--t0);
             }
             .tick line {
                 stroke: var(--rule-soft);
@@ -835,7 +838,8 @@
                     border-left: 0;
                     border-top: 1px solid var(--rule);
                     border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
-                    padding: var(--gutter) var(--gutter) calc(var(--s5) + env(safe-area-inset-bottom));
+                    padding: var(--gutter) var(--gutter)
+                        calc(var(--s5) + env(safe-area-inset-bottom));
                     transform: translateY(105%);
                 }
                 #detail.open {
@@ -959,7 +963,8 @@
                     title="Agregar un autor nuevo a la lista"
                     disabled
                 >
-                    <svg class="ic"><use href="#i-plus" /></svg><span class="lbl-text">Nuevo autor</span>
+                    <svg class="ic"><use href="#i-plus" /></svg
+                    ><span class="lbl-text">Nuevo autor</span>
                 </button>
                 <span class="divider" aria-hidden="true"></span>
                 <div class="grp" role="group" aria-label="Vista">
@@ -1027,7 +1032,9 @@
                     </summary>
                     <div class="menu-pop" role="menu">
                         <span class="menu-label">Exportar</span>
-                        <button id="dl-csv" type="button" role="menuitem">Datos en CSV</button>
+                        <button id="dl-csv" type="button" role="menuitem">
+                            Datos en CSV
+                        </button>
                         <button id="dl-json" type="button">
                             Datos en JSON
                         </button>
@@ -1148,7 +1155,13 @@
         </main>
 
         <div id="detail-backdrop" aria-hidden="true"></div>
-        <aside id="detail" role="dialog" aria-modal="true" aria-labelledby="detail-title" aria-hidden="true"></aside>
+        <aside
+            id="detail"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="detail-title"
+            aria-hidden="true"
+        ></aside>
         <div id="tip" role="status" aria-live="polite"></div>
 
         <script src="data.js"></script>
