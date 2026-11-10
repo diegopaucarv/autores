@@ -363,11 +363,13 @@
     // Sifting: mueve cada nodo de su columna a la posición que deja menos cruces con sus vecinas
     // (lazos que entran y que salen). Al mover un nodo sólo cambia su orden respecto a los demás de
     // su propia columna, así que cada prueba cuesta O(grado²) y una pasada completa es barata.
+    // La columna ancla NO se toca: ahí manda el orden elegido en el desplegable.
     const sift = (ord) => {
       const o = new Map(cols.map((c) => [c, [...ord.get(c)]]));
       for (let pass = 0; pass < 3; pass++) {
         let moved = false;
         for (let ci = 0; ci < cols.length; ci++) {
+          if (ci === anchor) continue;
           const c = cols[ci], cL = ci > 0 ? cols[ci - 1] : null, cR = ci + 1 < cols.length ? cols[ci + 1] : null;
           const pL = cL ? new Map(o.get(cL).map((id, i) => [id, i])) : null;
           const pR = cR ? new Map(o.get(cR).map((id, i) => [id, i])) : null;
