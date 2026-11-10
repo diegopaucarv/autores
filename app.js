@@ -32,6 +32,8 @@
 
   /* ---------- medición de texto para ajuste de etiquetas (Sankey) ---------- */
   const LINE_H = 13, LBL_FONT = '600 12px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif';
+  const DATE_FONT = '500 9.5px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif';
+  const EXTRA_FONT = '400 9px "Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif';
   let _mctx = null;
   function measureCtx() {
     if (!_mctx) { _mctx = document.createElement("canvas").getContext("2d"); _mctx.font = LBL_FONT; }
@@ -39,7 +41,7 @@
   }
   // Envuelve `text` en hasta `maxLines` líneas que quepan en `maxW` px; recorta la última con "…" si sobra texto.
   function wrapLabel(text, maxW, maxLines) {
-    const ctx = measureCtx();
+    const ctx = measureCtx(); ctx.font = LBL_FONT;
     const words = String(text).split(/\s+/).filter(Boolean);
     if (!words.length) return [""];
     const lines = []; let cur = "", wi = 0;
@@ -57,13 +59,22 @@
     }
     return lines.slice(0, maxLines);
   }
+  // Recorta `text` con «…» cuando no cabe en `maxW` con la tipografía que se va a renderizar.
+  function fitText(text, maxW, font) {
+    const ctx = measureCtx(); ctx.font = font || LBL_FONT;
+    const s = String(text == null ? "" : text);
+    if (!s || ctx.measureText(s).width <= maxW) return s;
+    let cut = s;
+    while (cut.length && ctx.measureText(cut + "…").width > maxW) cut = cut.slice(0, -1);
+    return cut.replace(/\s+$/, "") + "…";
+  }
 
   const S = { ds: null, cols: [], colorKey: null, file: "" };
   let pinnedIds = null; // Holds the currently clicked/sticky selection
 
   /* ---------- carga ---------- */
   function boot(text, name) {
-    
+
     pinnedIds = null;
     S.file = name;
     const ds = Panel.onLoad(Dataset.load(text, { file: name }), name);
@@ -75,12 +86,13 @@
     S.cols = [d[0], d[1], d[2] || null].filter((x, i) => x || i < 2);
     S.colorKey = S.cols[0] || null;
     updateColorScale(ds.dimensions);
-    
+
     // Sync slider with dataset
     $("cohort-val").textContent = Dataset.CFG.COHORT_SIZE;
     $("cohort-slider").value = Dataset.CFG.COHORT_SIZE;
-    
+
     S.tlSort = $("tl-sort").value = "start"; S.tlDesc = false; $("tl-dir").classList.remove("desc");
+    S.skSort = $("sk-sort").value = "value"; S.skDesc = false; $("sk-dir").classList.remove("desc");
     renderSelectors(); renderAll(); VH.length = 0; pushView();
   }
 
@@ -121,7 +133,7 @@
         const v = sel.value, other = S.cols.findIndex((c, i) => i !== slot && c && c === v);
         if (other >= 0) S.cols[other] = S.cols[slot];
         S.cols[slot] = v || null; S.cols = S.cols.filter((c, i) => c || i < 2);
-        
+
         renderSelectors(); renderAll(); pushView();
       });
       return sel;
@@ -129,11 +141,11 @@
     box.append(mk(0), " → ", mk(1), " → ", mk(2, true));
     const cs = document.createElement("select"); cs.title = "Variable de color";
     dims.forEach((d) => { const o = document.createElement("option"); o.value = d.key; o.textContent = d.label; cs.appendChild(o); });
-    cs.value = S.colorKey; 
-    cs.addEventListener("change", () => { 
-      S.colorKey = cs.value; 
+    cs.value = S.colorKey;
+    cs.addEventListener("change", () => {
+      S.colorKey = cs.value;
       updateColorScale(S.ds.dimensions);
-      renderAll(); pushView(); 
+      renderAll(); pushView();
     });
     const l = document.createElement("label"); l.append("Color", cs); box.appendChild(l);
   }
@@ -210,7 +222,7 @@
     const W = 1100, perCol = d3.max(cols, (c) => [...nodes.values()].filter((n) => n.col === c).length);
     const isName = cols.includes("name");
     const rowH = isName ? (Panel.hasExtra() ? 46 : 34) : 22;
-    const MARGIN = 170;
+    const MARGIN = 170, TOP = 30, BOTTOM = 8, NODE_PAD = 8, LABEL_GAP = 3;
 
     // --- posiciones X aproximadas por columna (antes del layout) para dimensionar las etiquetas ---
     const colStep = cols.length > 1 ? (W - 2 * MARGIN) / (cols.length - 1) : 0;
@@ -224,38 +236,91 @@
       const nextX0 = idx + 1 < cols.length ? approxX0(idx + 1) : null;
       let availW = first ? (x0 - 10) : (nextX0 != null ? nextX0 - 14 - labelX : (W - 10) - labelX);
       availW = Math.max(70, Math.min(260, availW));
-      n.__lines = wrapLabel(n.label, availW, 2);
+      n.__lines = wrapLabel(n.label, availW, 2).map((ln) => fitText(ln, availW));
+      n.__availW = availW;
       n.__anchor = first ? "end" : "start";
       let extraLines = nameCol ? 1 + (Panel.hasExtra() ? 1 : 0) : 0;
       n.__blockLines = n.__lines.length + extraLines;
       n.__blockHeight = n.__blockLines * LINE_H;
     });
 
-    // --- altura del gráfico: la base por filas, o la que exijan los bloques de etiquetas apilados ---
+    // --- altura del gráfico: la base por filas, o la que exija TODA la pila de etiquetas de la
+    //     columna más alta (las de dos líneas cuentan doble), con el padding que usa d3.sankey ---
     let labelReq = 0;
     cols.forEach((c) => {
       const ns = [...nodes.values()].filter((n) => n.col === c);
-      const h = ns.reduce((a, n) => a + n.__blockHeight, 0) + Math.max(0, ns.length - 1) * 3;
+      const h = ns.reduce((a, n) => a + n.__blockHeight, 0) + Math.max(0, ns.length - 1) * NODE_PAD;
       labelReq = Math.max(labelReq, h);
     });
-    const H = Math.max(420, perCol * rowH + 60, labelReq + 38);
+    let H = Math.max(420, perCol * rowH + 60, labelReq + TOP + BOTTOM);
 
-    const svg = host.append("svg").attr("viewBox", [0, 0, W, H]).attr("width", "100%").attr("role", "img");
-    const g = d3.sankey().nodeId((d) => d.id).nodeWidth(14).nodePadding(8).nodeSort((a, b) => {
-         const isTime = (c) => c && (c.includes("cohort") || c.includes("century"));
-         if (a.col === b.col && isTime(a.col)) {
-             return Dataset.timeValue(a.label) - Dataset.timeValue(b.label);
-         }
-         return b.value - a.value;
-      })
-      .extent([[MARGIN, 30], [W - MARGIN, H - 8]])({ nodes: [...nodes.values()], links: [...links.values()] });
+    // --- orden de los nodos dentro de cada columna (control «Orden») ---
+    const skMode = S.skSort || "value", reverse = !!S.skDesc;
+    const dimOrder = new Map(((S.ds.dimensions.find((d) => d.key === S.colorKey) || {}).values || []).map((v, i) => [v.value, i]));
+    const nodeCmp = (a, b) => {
+      if (a.col !== b.col) return 0;
+      let c;
+      if (skMode === "name") c = String(a.label).localeCompare(String(b.label), "es");
+      else if (skMode === "time") {
+        const ta = Dataset.timeValue(a.label), tb = Dataset.timeValue(b.label);
+        c = ta !== tb ? ta - tb : String(a.label).localeCompare(String(b.label), "es");
+      }
+      else if (skMode === "group") {
+        const ia = dimOrder.has(a.label) ? dimOrder.get(a.label) : 1e6;
+        const ib = dimOrder.has(b.label) ? dimOrder.get(b.label) : 1e6;
+        c = ia - ib || String(a.label).localeCompare(String(b.label), "es");
+      }
+      else if (isTime(a.col)) c = Dataset.timeValue(a.label) - Dataset.timeValue(b.label); // «valor»: fechas cronológicas
+      else c = b.value - a.value;                                                          // «valor»: mayor primero
+      return reverse ? -c : c;
+    };
+
+    const layout = (h) => d3.sankey().nodeId((d) => d.id).nodeWidth(14).nodePadding(NODE_PAD)
+      .nodeSort(nodeCmp)
+      .extent([[MARGIN, TOP], [W - MARGIN, h - BOTTOM]])({ nodes: [...nodes.values()], links: [...links.values()] });
+
+    // Reparte las etiquetas de cada columna de arriba abajo y las mantiene dentro del marco.
+    const placeLabels = (graph) => {
+      let topOver = 0, bottomOver = 0;
+      cols.forEach((c) => {
+        const arr = graph.nodes.filter((n) => n.col === c)
+          .map((n) => ({ n, center: (n.y0 + n.y1) / 2 }))
+          .sort((x, y) => x.center - y.center);
+        if (!arr.length) return;
+        let prevBottom = -Infinity;
+        arr.forEach((it) => {
+          let top = it.center - it.n.__blockHeight / 2;
+          if (top < prevBottom + LABEL_GAP) top = prevBottom + LABEL_GAP;
+          it.n.__labelTop = top; prevBottom = top + it.n.__blockHeight;
+        });
+        topOver = Math.max(topOver, TOP - arr[0].n.__labelTop);
+        bottomOver = Math.max(bottomOver, prevBottom - (H - BOTTOM));
+        let shift = arr[0].n.__labelTop < TOP ? TOP - arr[0].n.__labelTop : 0;
+        const over = prevBottom + shift - (H - BOTTOM);
+        if (over > 0) shift -= over;
+        if (shift) arr.forEach((it) => { it.n.__labelTop += shift; });
+      });
+      return Math.max(0, topOver) + Math.max(0, bottomOver);
+    };
+
+    // Si un bloque centrado en un nodo bajo aún sobresale, crece y vuelve a maquetar.
+    let g;
+    for (let pass = 0; ; pass++) {
+      g = layout(H);
+      const overflow = placeLabels(g);
+      if (overflow < 1 || pass >= 3) break;
+      H += overflow + 1;
+    }
+
+    const svg = host.append("svg").attr("viewBox", [0, 0, W, H]).attr("width", "100%")
+      .style("aspect-ratio", `${W} / ${H}`).attr("role", "img");
     cols.forEach((c) => {
       const ns = g.nodes.filter((n) => n.col === c); if (!ns.length) return;
       const dm = S.ds.dimensions.find((d) => d.key === c), first = c === cols[0];
       svg.append("text").attr("class", "colhead").attr("y", 16).attr("x", first ? ns[0].x0 - 6 : ns[0].x1 + 6)
         .attr("text-anchor", first ? "end" : "start").text(dm ? dm.label : c);
     });
-    
+
     svg.append("g").attr("fill", "none").selectAll("path").data(g.links).join("path").attr("class", "sk-link")
       .attr("d", d3.sankeyLinkHorizontal()).attr("stroke", (d) => color(d.cval))
       .attr("stroke-width", (d) => Math.max(1, d.width))
@@ -263,18 +328,6 @@
       .on("mouseleave", () => highlight(null))
       .on("click", (ev, d) => { ev.stopPropagation(); pin(d.ids); })
       .on("mousemove.tip", (ev, d) => Panel.tipLink(ev, d)).on("mouseleave.tip", Panel.tipHide);
-
-    // --- decluttering vertical: evita que las etiquetas se superpongan dentro de cada columna ---
-    cols.forEach((c) => {
-      const ns = g.nodes.filter((n) => n.col === c);
-      const items2 = ns.map((n) => ({ n, center: (n.y0 + n.y1) / 2 })).sort((a, b) => a.center - b.center);
-      let prevBottom = -Infinity;
-      items2.forEach((it) => {
-        let top = it.center - it.n.__blockHeight / 2;
-        if (top < prevBottom + 3) top = prevBottom + 3;
-        it.n.__labelTop = top; prevBottom = top + it.n.__blockHeight;
-      });
-    });
 
     const ng = svg.append("g").selectAll("g").data(g.nodes).join("g").attr("class", "sk-node")
       .on("mouseenter", (_, d) => highlight(d.ids))
@@ -310,10 +363,10 @@
         dateText = L.mode === "life" ? `${L.birth} – ${L.alive ? "hoy" : L.death}` : `act. ${L.activeStart} – ${L.activeEnd}`;
       }
       sel.append("tspan").attr("x", labelX).attr("y", y + LINE_H * 0.78)
-        .attr("fill", "var(--muted)").style("font-size", "9.5px").style("font-weight", "500").text(dateText);
+        .attr("fill", "var(--muted)").style("font-size", "9.5px").style("font-weight", "500").text(fitText(dateText, d.__availW, DATE_FONT));
       y += LINE_H;
       if (Panel.hasExtra()) sel.append("tspan").attr("x", labelX).attr("y", y + LINE_H * 0.78)
-        .attr("fill", "var(--ink-3)").style("font-size", "9px").style("font-weight", "400").text(Panel.extra(it || {}));
+        .attr("fill", "var(--ink-3)").style("font-size", "9px").style("font-weight", "400").text(fitText(Panel.extra(it || {}), d.__availW, EXTRA_FONT));
     });
   }
 
@@ -374,13 +427,15 @@
 
   /* ---------- historial de vistas: Volver / Restablecer ---------- */
   const VH = [];
-  const snap = () => JSON.stringify({ cols: S.cols, colorKey: S.colorKey, tlSort: S.tlSort || "start", tlDesc: !!S.tlDesc, cohort: Dataset.CFG.COHORT_SIZE });
+  const snap = () => JSON.stringify({ cols: S.cols, colorKey: S.colorKey, tlSort: S.tlSort || "start", tlDesc: !!S.tlDesc, skSort: S.skSort || "value", skDesc: !!S.skDesc, cohort: Dataset.CFG.COHORT_SIZE });
   function updateNav() { $("view-back").disabled = VH.length < 2; }
   function pushView() { const v = snap(); if (VH[VH.length - 1] !== v) VH.push(v); if (VH.length > 50) VH.shift(); updateNav(); }
   function applyView(json) {
     const v = JSON.parse(json);
     S.cols = v.cols; S.colorKey = v.colorKey; S.tlSort = v.tlSort; S.tlDesc = v.tlDesc;
+    S.skSort = v.skSort || "value"; S.skDesc = !!v.skDesc;
     $("tl-sort").value = v.tlSort; $("tl-dir").classList.toggle("desc", v.tlDesc);
+    $("sk-sort").value = S.skSort; $("sk-dir").classList.toggle("desc", S.skDesc);
     if (v.cohort !== Dataset.CFG.COHORT_SIZE) {
       Dataset.CFG.COHORT_SIZE = v.cohort; $("cohort-slider").value = v.cohort; $("cohort-val").textContent = v.cohort;
       S.ds = Dataset.analyze(S.ds.items, { currentYear: CY, file: S.file, format: S.ds.report.format, delimiter: S.ds.report.delimiter });
@@ -392,7 +447,7 @@
     if (!S.ds || !S.ds.items.length) return;
     const d = S.ds.defaults.length >= 2 ? S.ds.defaults : S.ds.dimensions.slice(0, 3).map((x) => x.key);
     const cols = [d[0], d[1], d[2] || null].filter((x, i) => x || i < 2);
-    applyView(JSON.stringify({ cols, colorKey: cols[0] || null, tlSort: "start", tlDesc: false, cohort: 50 }));
+    applyView(JSON.stringify({ cols, colorKey: cols[0] || null, tlSort: "start", tlDesc: false, skSort: "value", skDesc: false, cohort: 50 }));
     const q = $("search"); q.value = ""; q.dispatchEvent(new Event("input"));
     Panel.close(); pushView();
   }
@@ -408,7 +463,7 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     $("dl-csv").onclick = () => download("csv"); $("dl-json").onclick = () => download("json");
-    
+
     // Clear pinned elements when clicking on the background
     document.addEventListener("click", (e) => {
        if (e.target.closest && e.target.closest("#detail,.top,.panel-head,.legend,#report")) return;
@@ -419,8 +474,13 @@
       S.tlDesc = !S.tlDesc; e.currentTarget.classList.toggle("desc", S.tlDesc);
       e.currentTarget.setAttribute("aria-label", S.tlDesc ? "Orden descendente" : "Orden ascendente"); renderTimeline(true);
     });
+    $("sk-sort").addEventListener("change", (e) => { S.skSort = e.target.value; renderSankey(); paint(); pushView(); });
+    $("sk-dir").addEventListener("click", (e) => {
+      S.skDesc = !S.skDesc; e.currentTarget.classList.toggle("desc", S.skDesc);
+      renderSankey(); paint(); pushView();
+    });
     Panel.init(S, S.api);
-    
+
     // Dynamic Cohort Slider
     $("cohort-slider").addEventListener("input", (e) => {
         $("cohort-val").textContent = e.target.value;
