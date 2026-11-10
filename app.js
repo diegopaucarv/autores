@@ -139,7 +139,8 @@
       });
       return sel;
     };
-    box.append(mk(0), " → ", mk(1), " → ", mk(2, true));
+    const arrow = () => { const s = document.createElement("span"); s.className = "arrow"; s.textContent = "→"; return s; };
+    box.append(mk(0), arrow(), mk(1), arrow(), mk(2, true));
     const cs = document.createElement("select"); cs.title = "Variable de color";
     dims.forEach((d) => { const o = document.createElement("option"); o.value = d.key; o.textContent = d.label; cs.appendChild(o); });
     cs.value = S.colorKey;

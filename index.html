@@ -279,6 +279,18 @@
                 gap: var(--s4);
                 padding: 0 var(--gutter) var(--s5);
             }
+            /* Los hijos de un grid no deben imponer su ancho mínimo: el contenido
+               ancho (chips, nombres largos, SVG) se queda dentro de su panel. */
+            main > * {
+                min-width: 0;
+            }
+            #report {
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+            .brand {
+                min-width: 0;
+            }
             #report:empty {
                 display: none;
             }
@@ -360,6 +372,54 @@
                 gap: var(--s2);
                 color: var(--ink-2);
             }
+            /* Controles del panel: búsqueda siempre visible y el resto dentro de un
+               desplegable «Ajustes», apilado y con anchos cortos. */
+            .panel-head > .search {
+                flex: 0 1 300px;
+                min-width: 0;
+            }
+            .panel-head .field select {
+                max-width: 160px;
+            }
+            .panel-head .field input[type="range"] {
+                width: 120px;
+            }
+            .config-pop {
+                min-width: 264px;
+            }
+            .config-pop #selectors {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .config-pop #selectors > select {
+                width: 100%;
+            }
+            .config-pop .arrow {
+                display: none;
+            }
+            .config-pop #selectors label,
+            .config-pop .field {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: space-between;
+                gap: var(--s2);
+                width: 100%;
+            }
+            .config-pop #selectors label select {
+                flex: 1 1 auto;
+                min-width: 0;
+                max-width: none;
+            }
+            /* El «Orden» de la línea de tiempo, compacto */
+            .field.orden {
+                flex: 0 1 220px;
+                max-width: 220px;
+            }
+            .field.orden select {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
             .field b {
                 min-width: 2.2ch;
                 font-variant-numeric: tabular-nums;
@@ -371,6 +431,7 @@
             .canvas {
                 overflow-x: auto;
                 overflow-y: hidden;
+                overscroll-behavior-x: contain;
                 scrollbar-color: var(--rule) transparent;
             }
             .canvas svg {
@@ -380,10 +441,6 @@
                 max-width: none;
                 min-width: var(--chart-min);
                 margin-inline: auto;
-            }
-            #timeline {
-                max-height: 560px;
-                overflow: auto;
             }
             .empty {
                 margin: 0;
@@ -806,42 +863,76 @@
                 min-width: 0;
             }
             @media (max-width: 860px) {
+                /* Cabecera en UNA columna: marca arriba y cada control a ancho completo. */
                 .top {
                     flex-direction: column;
                     align-items: stretch;
                 }
                 .top-tools {
                     width: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: var(--s2);
+                }
+                .top-tools > *,
+                .top-tools .menu > summary {
+                    width: 100%;
+                }
+                .top-tools .menu > summary {
+                    justify-content: space-between;
+                }
+                .brand p {
+                    max-width: none;
+                    overflow-wrap: anywhere;
+                }
+                .divider {
+                    display: none;
                 }
             }
             @media (max-width: 720px) {
                 .top {
                     gap: var(--s2);
                 }
-                .top-tools {
-                    width: 100%;
-                    display: grid;
-                    grid-template-columns: minmax(0, 1fr) auto auto;
-                    align-items: center;
-                    gap: var(--s2);
+                /* Paneles: búsqueda arriba y ajustes apilados a ancho completo */
+                .panel-head {
+                    flex-direction: column;
+                    align-items: stretch;
                 }
-                .top-tools .fs,
-                .top-tools #fs {
-                    grid-column: 1 / -1;
+                .panel-head > .search,
+                .search {
                     width: 100%;
                 }
-                .top-tools .grp {
-                    justify-content: flex-start;
-                }
-                .search,
                 .search input {
                     width: 100%;
+                    flex: 1 1 auto;
+                    min-width: 0;
                 }
-                .panel-head .spacer {
-                    margin-left: 0;
+                .panel-head > .menu,
+                .panel-head > .menu > summary {
+                    width: 100%;
                 }
-                .divider {
-                    display: none;
+                .panel-head > .menu > summary {
+                    justify-content: space-between;
+                }
+                .panel-head .menu-pop {
+                    position: static;
+                    width: 100%;
+                    min-width: 0;
+                    max-height: none;
+                    margin-top: var(--s2);
+                    box-shadow: none;
+                }
+                .panel-head > .search {
+                    flex: 0 0 auto;
+                    width: 100%;
+                }
+                .panel-head .field:not(.orden) {
+                    max-width: none;
+                }
+                .panel-head .field.orden {
+                    flex: 0 0 auto;
+                    max-width: 220px;
                 }
                 #edit-badge {
                     position: static;
@@ -991,32 +1082,90 @@
                     </summary>
                     <div class="menu-pop menu-pop-wide" role="menu">
                         <span class="menu-label">Vista</span>
-                        <button id="view-back" type="button" role="menuitem" title="Volver a la vista anterior (Alt+←)" disabled>
-                            <svg class="ic"><use href="#i-back" /></svg> Vista anterior
+                        <button
+                            id="view-back"
+                            type="button"
+                            role="menuitem"
+                            title="Volver a la vista anterior (Alt+←)"
+                            disabled
+                        >
+                            <svg class="ic"><use href="#i-back" /></svg> Vista
+                            anterior
                         </button>
-                        <button id="view-reset" type="button" role="menuitem" title="Restablecer vista" disabled>
-                            <svg class="ic"><use href="#i-reset" /></svg> Restablecer vista
+                        <button
+                            id="view-reset"
+                            type="button"
+                            role="menuitem"
+                            title="Restablecer vista"
+                            disabled
+                        >
+                            <svg class="ic"><use href="#i-reset" /></svg>
+                            Restablecer vista
                         </button>
                         <span class="menu-label">Edición</span>
-                        <button id="undo" type="button" role="menuitem" title="Deshacer (Ctrl+Z)" disabled>
-                            <svg class="ic"><use href="#i-undo" /></svg> Deshacer
+                        <button
+                            id="undo"
+                            type="button"
+                            role="menuitem"
+                            title="Deshacer (Ctrl+Z)"
+                            disabled
+                        >
+                            <svg class="ic"><use href="#i-undo" /></svg>
+                            Deshacer
                         </button>
-                        <button id="redo" type="button" role="menuitem" title="Rehacer (Ctrl+Y)" disabled>
+                        <button
+                            id="redo"
+                            type="button"
+                            role="menuitem"
+                            title="Rehacer (Ctrl+Y)"
+                            disabled
+                        >
                             <svg class="ic"><use href="#i-redo" /></svg> Rehacer
                         </button>
-                        <button id="discard" type="button" role="menuitem" title="Descartar todos los cambios" disabled>
-                            <svg class="ic"><use href="#i-trash" /></svg> Descartar cambios
+                        <button
+                            id="discard"
+                            type="button"
+                            role="menuitem"
+                            title="Descartar todos los cambios"
+                            disabled
+                        >
+                            <svg class="ic"><use href="#i-trash" /></svg>
+                            Descartar cambios
                         </button>
                         <span class="badge" id="edit-badge"></span>
                         <span class="menu-label">Exportar</span>
-                        <button id="dl-csv" type="button" role="menuitem">Datos en CSV</button>
-                        <button id="dl-json" type="button" role="menuitem">Datos en JSON</button>
-                        <button id="meta-out" type="button" role="menuitem" title="Descripciones y cambios → .meta.json">Notas (.meta.json)</button>
-                        <button type="button" role="menuitem" onclick="document.getElementById('meta-in').click()">Importar notas…</button>
+                        <button id="dl-csv" type="button" role="menuitem">
+                            Datos en CSV
+                        </button>
+                        <button id="dl-json" type="button" role="menuitem">
+                            Datos en JSON
+                        </button>
+                        <button
+                            id="meta-out"
+                            type="button"
+                            role="menuitem"
+                            title="Descripciones y cambios → .meta.json"
+                        >
+                            Notas (.meta.json)
+                        </button>
+                        <button
+                            type="button"
+                            role="menuitem"
+                            onclick="document.getElementById('meta-in').click()"
+                        >
+                            Importar notas…
+                        </button>
                         <input type="file" id="meta-in" accept=".json" hidden />
                         <span class="menu-label">Preferencias</span>
-                        <button id="theme" type="button" role="menuitem" title="Cambiar tema">
-                            <svg class="ic ic-moon"><use href="#i-moon" /></svg><svg class="ic ic-sun"><use href="#i-sun" /></svg> Cambiar tema
+                        <button
+                            id="theme"
+                            type="button"
+                            role="menuitem"
+                            title="Cambiar tema"
+                        >
+                            <svg class="ic ic-moon"><use href="#i-moon" /></svg
+                            ><svg class="ic ic-sun"><use href="#i-sun" /></svg>
+                            Cambiar tema
                         </button>
                     </div>
                 </details>
@@ -1028,42 +1177,6 @@
 
             <section class="panel" aria-label="Diagrama Sankey">
                 <div class="panel-head">
-                    <div id="selectors"></div>
-                    <label class="field"
-                        >Orden
-                        <select id="sk-sort">
-                            <option value="value">valor</option>
-                        </select>
-                        <button
-                            id="sk-dir"
-                            class="icon"
-                            type="button"
-                            aria-label="Invertir orden"
-                            title="Invertir orden"
-                        >
-                            <svg class="ic"><use href="#i-up" /></svg>
-                        </button>
-                    </label>
-                    <label class="field"
-                        >Cohorte
-                        <input
-                            type="range"
-                            id="cohort-slider"
-                            min="10"
-                            max="100"
-                            step="5"
-                            value="50"
-                            aria-label="Años por cohorte"
-                        />
-                        <b id="cohort-val">50</b> años</label
-                    >
-                    <div class="spacer"></div>
-                    <details class="menu" id="textsel" hidden>
-                        <summary>
-                            Texto en nodos (<span id="textsel-n">0</span>)
-                        </summary>
-                        <div class="menu-pop" id="textsel-list"></div>
-                    </details>
                     <div class="search" id="searchbox">
                         <input
                             type="search"
@@ -1076,6 +1189,48 @@
                         <span id="search-n" aria-live="polite"></span>
                         <div id="search-results" hidden></div>
                     </div>
+                    <details class="menu config-menu">
+                        <summary aria-label="Configuración del diagrama">
+                            Ajustes
+                        </summary>
+                        <div class="menu-pop config-pop">
+                            <div id="selectors"></div>
+                            <label class="field"
+                                >Orden
+                                <select id="sk-sort">
+                                    <option value="value">valor</option>
+                                </select>
+                                <button
+                                    id="sk-dir"
+                                    class="icon"
+                                    type="button"
+                                    aria-label="Invertir orden"
+                                    title="Invertir orden"
+                                >
+                                    <svg class="ic"><use href="#i-up" /></svg>
+                                </button>
+                            </label>
+                            <label class="field"
+                                >Cohorte
+                                <input
+                                    type="range"
+                                    id="cohort-slider"
+                                    min="10"
+                                    max="100"
+                                    step="5"
+                                    value="50"
+                                    aria-label="Años por cohorte"
+                                />
+                                <b id="cohort-val">50</b> años</label
+                            >
+                        </div>
+                    </details>
+                    <details class="menu" id="textsel" hidden>
+                        <summary>
+                            Texto en nodos (<span id="textsel-n">0</span>)
+                        </summary>
+                        <div class="menu-pop" id="textsel-list"></div>
+                    </details>
                 </div>
                 <div class="legend" id="legend"></div>
                 <div class="canvas" id="sankey">
@@ -1086,7 +1241,7 @@
             <section class="panel" aria-label="Línea de tiempo">
                 <div class="panel-head">
                     <h2>Línea de tiempo</h2>
-                    <label class="field"
+                    <label class="field orden"
                         >Orden
                         <select id="tl-sort">
                             <option value="start">inicio</option>
