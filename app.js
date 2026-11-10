@@ -49,8 +49,9 @@
   function boot(text, name) {
     
     pinnedIds = null;
-    const ds = Dataset.load(text, { file: name });
-    S.ds = ds; S.file = name;
+    S.file = name;
+    const ds = Panel.onLoad(Dataset.load(text, { file: name }), name);
+    S.ds = ds;
     renderReport(ds);
     if (!ds.items.length) { ["selectors", "legend", "sankey", "timeline"].forEach((i) => ($(i).innerHTML = "")); return; }
     const d = ds.defaults.length >= 2 ? ds.defaults : ds.dimensions.slice(0, 3).map((x) => x.key);
@@ -124,13 +125,23 @@
     return v ? v.split(Dataset.CFG.MULTI_SEP).map((x) => x.trim()).filter(Boolean) : [MISSING];
   };
 
-  function renderAll() { renderLegend(); renderSankey(); renderTimeline(); }
+  function renderAll() { renderLegend(); renderSankey(); renderTimeline(); if (pinnedIds) setPinned(pinnedIds); }
+  function setPinned(ids) { pinnedIds = ids && ids.size ? ids : null; const keep = pinnedIds; pinnedIds = null; highlight(keep, false); pinnedIds = keep; }
+  function reanalyze() {
+    S.ds = Dataset.analyze(S.ds.items, { currentYear: CY, file: S.file, format: S.ds.report.format, delimiter: S.ds.report.delimiter });
+    const keys = S.ds.dimensions.map((d) => d.key);
+    S.cols = S.cols.filter((c, i) => keys.includes(c) || (!c && i >= 2));
+    if (S.cols.length < 2) { const d = S.ds.defaults.length >= 2 ? S.ds.defaults : keys.slice(0, 3); S.cols = [d[0], d[1], d[2] || null].filter((x, i) => x || i < 2); }
+    if (!keys.includes(S.colorKey)) S.colorKey = S.cols[0];
+    updateColorScale(S.ds.dimensions); renderReport(S.ds); renderSelectors(); renderAll();
+  }
 
   function renderLegend() {
     const lg = $("legend"); lg.innerHTML = ""; if (!S.colorKey) return;
     const d = S.ds.dimensions.find((x) => x.key === S.colorKey);
     (d ? d.values : []).forEach(({ value }) => {
-      const s = document.createElement("span"); s.innerHTML = `<i style="background:${color(value)}"></i>`; s.append(value); lg.appendChild(s);
+      const s = document.createElement("span"); s.innerHTML = `<i style="background:${color(value)}"></i>`; s.append(value); s.style.cursor = "pointer"; s.title = Panel.descOf(S.colorKey, value) || "Clic: ficha y descripción";
+      s.onclick = (e) => { e.stopPropagation(); Panel.showNode(S.colorKey, value); }; lg.appendChild(s);
     });
   }
 
@@ -187,8 +198,8 @@
     });
     const W = 1100, perCol = d3.max(cols, (c) => [...nodes.values()].filter((n) => n.col === c).length);
     const isName = cols.includes("name");
-    const rowH = isName ? 34 : 22;
-    const H = Math.max(420, perCol * rowH + 40);
+    const rowH = isName ? (Panel.hasExtra() ? 46 : 34) : 22;
+    const H = Math.max(420, perCol * rowH + 60);
     const svg = host.append("svg").attr("viewBox", [0, 0, W, H]).attr("width", "100%").attr("role", "img");
     const g = d3.sankey().nodeId((d) => d.id).nodeWidth(14).nodePadding(8).nodeSort((a, b) => {
          const isTime = (c) => c && (c.includes("cohort") || c.includes("century"));
@@ -197,23 +208,30 @@
          }
          return b.value - a.value;
       })
-      .extent([[170, 8], [W - 170, H - 8]])({ nodes: [...nodes.values()], links: [...links.values()] });
+      .extent([[170, 30], [W - 170, H - 8]])({ nodes: [...nodes.values()], links: [...links.values()] });
+    cols.forEach((c) => {
+      const ns = g.nodes.filter((n) => n.col === c); if (!ns.length) return;
+      const dm = S.ds.dimensions.find((d) => d.key === c), first = c === cols[0];
+      svg.append("text").attr("class", "colhead").attr("y", 16).attr("x", first ? ns[0].x0 - 6 : ns[0].x1 + 6)
+        .attr("text-anchor", first ? "end" : "start").text(dm ? dm.label : c);
+    });
     
     svg.append("g").attr("fill", "none").selectAll("path").data(g.links).join("path").attr("class", "sk-link")
       .attr("d", d3.sankeyLinkHorizontal()).attr("stroke", (d) => color(d.source.label)).attr("stroke-opacity", 0.35)
       .attr("stroke-width", (d) => Math.max(1, d.width))
       .on("mouseenter", (_, d) => highlight(d.ids))
       .on("mouseleave", () => highlight(null))
-      .on("click", (ev, d) => { ev.stopPropagation(); highlight(d.ids, true); });
-      
+      .on("click", (ev, d) => { ev.stopPropagation(); highlight(d.ids, true); })
+      .on("mousemove.tip", (ev, d) => Panel.tipLink(ev, d)).on("mouseleave.tip", Panel.tipHide);
+
     const ng = svg.append("g").selectAll("g").data(g.nodes).join("g").attr("class", "sk-node")
       .on("mouseenter", (_, d) => highlight(d.ids))
       .on("mouseleave", () => highlight(null))
-      .on("click", (ev, d) => { ev.stopPropagation(); highlight(d.ids, true); });
-      
+      .on("click", (ev, d) => { ev.stopPropagation(); Panel.showNode(d.col, d.label); })
+      .on("mousemove.tip", (ev, d) => Panel.tipNode(ev, d)).on("mouseleave.tip", Panel.tipHide);
+
     ng.append("rect").attr("x", (d) => d.x0).attr("y", (d) => d.y0).attr("width", (d) => d.x1 - d.x0)
       .attr("height", (d) => Math.max(2, d.y1 - d.y0)).attr("fill", (d) => color(d.label)).attr("stroke", "#222").attr("stroke-width", 0.5);
-    ng.append("title").text((d) => `${d.label} · ${d.ids.size} ítem(s)`);
     const txt = ng.append("text").attr("class", "lbl")
       .attr("text-anchor", (d) => (d.col === cols[0] ? "end" : "start"));
       
@@ -238,9 +256,20 @@
             ? `${L.birth} – ${L.alive ? 'hoy' : L.death}`
             : `act. ${L.activeStart} – ${L.activeEnd}`;
       });
+    if (Panel.hasExtra()) txt.filter((d) => d.col === "name").append("tspan")
+      .attr("x", (d) => (d.col === cols[0] ? d.x0 - 6 : d.x1 + 6)).attr("y", (d) => (d.y0 + d.y1) / 2).attr("dy", "2.5em")
+      .attr("fill", "#7a7f89").style("font-size", "9px").style("font-weight", "400")
+      .text((d) => Panel.extra(items.find((i) => i.id === [...d.ids][0]) || {}));
   }
 
   /* ---------- Timeline ---------- */
+  function tlCmp(a, b) {
+    const st = (i) => i.__life.birth ?? i.__life.activeStart, m = S.tlSort || "start";
+    if (m === "end") return a.__life.activeEnd - b.__life.activeEnd || st(a) - st(b);
+    if (m === "name") return String(a.name || a.id).localeCompare(String(b.name || b.id), "es");
+    if (m === "group") return String(vals(a, S.colorKey)[0]).localeCompare(String(vals(b, S.colorKey)[0]), "es") || st(a) - st(b);
+    return st(a) - st(b);
+  }
   function renderTimeline() {
     const host = d3.select("#timeline"); host.selectAll("*").remove();
     if (S.cols.includes("name")) {
@@ -248,7 +277,7 @@
         return;
     }
     const rows = S.ds.items.filter((i) => i.__life.valid)
-      .sort((a, b) => (a.__life.birth ?? a.__life.activeStart) - (b.__life.birth ?? b.__life.activeStart));
+      .sort(tlCmp);
     if (!rows.length) { host.append("p").attr("class", "empty").text("Sin ítems con fechas válidas."); return; }
     const RH = 15, T = 28, LW = 190, W = 1100, H = T + rows.length * RH + 6;
     const start = (i) => i.__life.birth ?? i.__life.activeStart;
@@ -263,7 +292,8 @@
       .attr("transform", (_, i) => `translate(0,${T + i * RH})`)
       .on("mouseenter", (_, d) => highlight(new Set([d.id])))
       .on("mouseleave", () => highlight(null))
-      .on("click", (ev, d) => { ev.stopPropagation(); highlight(new Set([d.id]), true); });
+      .on("click", (ev, d) => { ev.stopPropagation(); Panel.showItem(d.id); })
+      .on("mousemove.tip", (ev, d) => Panel.tipItem(ev, d)).on("mouseleave.tip", Panel.tipHide);
       
     r.append("text").attr("x", LW - 8).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "end").attr("class", "lbl")
       .text((d) => (d.name || d.id).slice(0, 30));
@@ -273,7 +303,7 @@
       .attr("width", (d) => Math.max(2, x(d.__life.activeEnd) - x(d.__life.activeStart)))
       .attr("fill", col).attr("fill-opacity", (d) => (d.__life.alive ? 0.5 : 0.9))
       .attr("stroke", col).attr("stroke-dasharray", (d) => (d.__life.alive ? "4 2" : null))
-      .append("title").text((d) => `${d.name}\n${d.__life.mode === "life" ? "vida " + d.__life.birth + "–" + (d.__life.alive ? "hoy" : d.__life.death) + "\n" : "(sin nacimiento) "}actividad ${d.__life.activeStart}–${d.__life.activeEnd}${d.__life.warnings.length ? "\n⚠ " + d.__life.warnings.map((w) => WARN[w] || w).join(", ") : ""}`);
+    ;
   }
 
   /* ---------- exportar ---------- */
@@ -289,9 +319,12 @@
     $("dl-csv").onclick = () => download("csv"); $("dl-json").onclick = () => download("json");
     
     // Clear pinned elements when clicking on the background
-    document.addEventListener("click", () => {
-       if (pinnedIds) highlight(null, true);
+    document.addEventListener("click", (e) => {
+       if (e.target.closest && e.target.closest("#detail,.bar,#selectors,.bar2,#report")) return;
+       if (pinnedIds) { highlight(null, true); Panel.close(); }
     });
+    $("tl-sort").addEventListener("change", (e) => { S.tlSort = e.target.value; renderTimeline(); if (pinnedIds) setPinned(pinnedIds); });
+    Panel.init(S, S.api);
     
     // Dynamic Cohort Slider
     $("cohort-slider").addEventListener("input", (e) => {
@@ -310,5 +343,6 @@
 
     FolderSelector.setup({ container: $("fs"), dataDir: "data/", onText: boot });
   });
+  S.api = { CY, WARN, color: () => color, cols: () => S.cols, renderAll, reanalyze, setPinned };
   window.__app = S;
 })();
