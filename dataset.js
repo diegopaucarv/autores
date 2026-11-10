@@ -12,7 +12,7 @@
     MULTI_SEP: "|",
     MIN_UNIQUE: 2,
     MAX_UNIQUE: 100,
-    MAX_AVG_LEN: 45,
+    MAX_AVG_LEN: 70,
     MIN_COVERAGE: 0.5,
   };
 
@@ -22,20 +22,17 @@
     name: ["nombre", "autor", "author", "title", "label"],
     birth: ["nacimiento", "born", "birth_year", "birthyear", "year_birth", "fecha_nacimiento"],
     death: ["muerte", "died", "death_year", "deathyear", "year_death", "fecha_muerte", "fallecimiento"],
-    category: ["categoria"],
-    tradition: ["tradicion"],
-    gender: ["genero", "sexo"],
-    country: ["pais"],
     lifespan: ["vida", "years", "anos"],
     active: ["anos_actividad", "years_active", "activity", "period", "active_years"],
   };
   const LEGACY_IGNORED = new Set(["span"]);
 
   const NON_DIMENSION = new Set([
-    "id", "uuid", "url", "link", "image", "img", "photo", "avatar", "active", "concepto_clave", "obra_emblematica",
-    "birth", "death", "lifespan", "highlight", "description", "descripcion", "bio",
-    "summary", "resumen", "dates_note", "dates_verified", "country_note", "notes", "nota", "notas",
-  ]);
+  "id", "uuid", "url", "link", "image", "img", "photo", "avatar",
+  "birth", "death", "lifespan", "active", "highlight",
+  "description", "descripcion", "bio", "summary", "resumen",
+  "dates_note", "dates_verified", "country_note", "notes", "nota", "notas",
+]);
 
   function sniffDelimiter(text) {
     const firstLine = text.split(/\r?\n/, 1)[0] || "";
@@ -376,24 +373,37 @@
     return { items: out, renamed, ignored: [...ignored] };
   }
 
-  function mergeDuplicates(items) {
-    const byKey = new Map(), out = [], merged = {}, conflicts = [];
-    items.forEach((it) => {
-      const k = it.name ? slug(it.name) : null;
-      const prev = k && byKey.get(k);
-      if (prev && (String(prev.birth ?? "") === String(it.birth ?? "") || !prev.birth || !it.birth)) {
-        merged[prev.name] = (merged[prev.name] || 1) + 1;
-        for (const [f, v] of Object.entries(it)) {
-          if (v === "" || v === prev[f]) continue;
-          if (f === "group") { const set = new Set(String(prev[f] || "").split(CFG.MULTI_SEP).filter(Boolean)); set.add(v); prev[f] = [...set].join(CFG.MULTI_SEP); }
-          else if (prev[f] === "" || prev[f] === undefined) prev[f] = v;
-          else if (!["highlight", "concepto_clave", "obra_emblematica"].includes(f))
-            conflicts.push({ name: prev.name, field: f, kept: prev[f], other: v });
+function mergeDuplicates(items) {
+  // Identitarios: si difieren, es conflicto real (dos autores distintos o error)
+  const CONFLICT = new Set(["name", "birth", "death"]);
+  // Técnicos: se queda el primero, sin reportar conflicto ni multi-valuar
+  const TECHNICAL = new Set([
+    "id", "uuid", "url", "link", "image", "img", "photo", "avatar",
+    "highlight", "span", "index",
+    "dates_verified", "dates_note", "notes", "nota", "notas",
+  ]);
+  const byKey = new Map(), out = [], merged = {}, conflicts = [];
+  items.forEach((it) => {
+    const k = it.name ? slug(it.name) : null;
+    const prev = k && byKey.get(k);
+    if (prev && (String(prev.birth ?? "") === String(it.birth ?? "") || !prev.birth || !it.birth)) {
+      merged[prev.name] = (merged[prev.name] || 1) + 1;
+      for (const [f, v] of Object.entries(it)) {
+        if (v === "" || v === prev[f]) continue;
+        if (CONFLICT.has(f)) {
+          if (prev[f] === "" || prev[f] === undefined) prev[f] = v;
+          else conflicts.push({ name: prev.name, field: f, kept: prev[f], other: v });
+        } else if (TECHNICAL.has(f)) {
+          if (prev[f] === "" || prev[f] === undefined) prev[f] = v;
+        } else {
+          const set = new Set(String(prev[f] || "").split(CFG.MULTI_SEP).filter(Boolean));
+          set.add(v); prev[f] = [...set].join(CFG.MULTI_SEP);
         }
-      } else { if (k) byKey.set(k, it); out.push(it); }
-    });
-    return { items: out, merged, conflicts };
-  }
+      }
+    } else { if (k) byKey.set(k, it); out.push(it); }
+  });
+  return { items: out, merged, conflicts };
+}
 
   function refresh(items, currentYear) {
     items.forEach((it) => { it.__life = lifespan(it, currentYear); applyDerived(it); });
