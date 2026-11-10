@@ -293,51 +293,49 @@
       return reverse ? -c : c;
     };
 
-    const layout = (h) => d3.sankey().nodeId((d) => d.id).nodeWidth(14).nodePadding(NODE_PAD)
+    // Maqueta el sankey. `pad` reserva en cada borde el medio bloque que la etiqueta más alta
+    // sobresale de su barra (d3 fija el primer y el último nodo a los bordes), para que la
+    // primera y la última etiqueta quepan centradas en su nodo.
+    const layout = (h, pad) => d3.sankey().nodeId((d) => d.id).nodeWidth(14).nodePadding(NODE_PAD)
       .nodeSort(nodeCmp)
-      .extent([[MARGIN, TOP], [W - MARGIN, h - BOTTOM]])({ nodes: [...nodes.values()], links: [...links.values()] });
+      .extent([[MARGIN, TOP + pad.top], [W - MARGIN, h - BOTTOM - pad.bottom]])({ nodes: [...nodes.values()], links: [...links.values()] });
 
-    // Reparte las etiquetas de cada columna desde su nodo, de arriba abajo, y mantiene los dos
-    // bordes de la columna dentro del marco. d3 fija el primer y el último nodo a los bordes, así
-    // que una etiqueta más alta que su nodo siempre sobresale: primero se recortan los huecos
-    // sobrantes entre etiquetas y solo lo que no quepa se devuelve para agrandar el gráfico.
+    // Etiquetas: cada una centrada en su barra. Si choca con la anterior, baja la BARRA junto con
+    // su etiqueta (las alturas no cambian y los lazos se redibujan con la barra). Nunca se separan
+    // una de otra: lo que no quepa se devuelve y el gráfico crece y se remaqueta.
     const placeLabels = (graph) => {
+      const pad = { top: 0, bottom: 0 };
       let need = 0;
       cols.forEach((c) => {
-        const arr = graph.nodes.filter((n) => n.col === c)
-          .map((n) => ({ n, center: (n.y0 + n.y1) / 2 }))
-          .sort((x, y) => x.center - y.center);
+        const arr = graph.nodes.filter((n) => n.col === c).sort((a, b) => a.y0 - b.y0);
         if (!arr.length) return;
-        let prevBottom = -Infinity;
-        arr.forEach((it) => {
-          let top = it.center - it.n.__blockHeight / 2;
-          if (top < prevBottom + LABEL_GAP) top = prevBottom + LABEL_GAP;
-          it.n.__labelTop = top; prevBottom = top + it.n.__blockHeight;
+        const first = arr[0], last = arr[arr.length - 1];
+        pad.top = Math.max(pad.top, (first.__blockHeight - (first.y1 - first.y0)) / 2);
+        pad.bottom = Math.max(pad.bottom, (last.__blockHeight - (last.y1 - last.y0)) / 2);
+        let prev = -Infinity;
+        arr.forEach((n) => {
+          const bh = n.__blockHeight;
+          let top = (n.y0 + n.y1 - bh) / 2;
+          if (top < prev + LABEL_GAP) {
+            const d = prev + LABEL_GAP - top;
+            n.y0 += d; n.y1 += d; top += d;
+          }
+          n.__labelTop = top; prev = top + bh;
         });
-        let over = prevBottom - (H - BOTTOM);
-        if (over > 0) {
-          const gaps = arr.slice(1).map((it, i) => Math.max(0, it.n.__labelTop - arr[i].n.__labelTop - arr[i].n.__blockHeight - LABEL_GAP));
-          const room = gaps.reduce((a, b) => a + b, 0), f = room > 0 ? Math.min(1, over / room) : 0;
-          let acc = 0;
-          arr.forEach((it, i) => { if (i) { acc += gaps[i - 1] * f; it.n.__labelTop -= acc; } });
-          prevBottom -= acc; over -= acc;
-        }
-        // Si aún sobresale, la pila se mueve entera sin cruzar TOP.
-        const shift = arr[0].n.__labelTop < TOP ? TOP - arr[0].n.__labelTop : 0;
-        const s = shift - Math.min(over, arr[0].n.__labelTop + shift - TOP);
-        if (s) arr.forEach((it) => { it.n.__labelTop += s; });
-        need = Math.max(need, prevBottom + s - (H - BOTTOM));
+        need = Math.max(need, prev - (H - BOTTOM));
       });
-      return Math.max(0, need);
+      return { top: Math.max(0, pad.top), bottom: Math.max(0, pad.bottom), need: Math.max(0, need) };
     };
 
-    // Si un bloque centrado en un nodo bajo aún sobresale, crece y vuelve a maquetar.
-    let g;
+    // Repite la maqueta hasta que los márgenes quedan estables y no falta altura.
+    let g, pad = { top: 0, bottom: 0 };
     for (let pass = 0; ; pass++) {
-      g = layout(H);
-      const overflow = placeLabels(g);
-      if (overflow < 1 || pass >= 5) break;
-      H += overflow + 1;
+      g = layout(H, pad);
+      const r = placeLabels(g);
+      const stable = Math.abs(r.top - pad.top) < 0.5 && Math.abs(r.bottom - pad.bottom) < 0.5;
+      if (r.need < 1 && (stable || pass >= 4)) break;
+      pad = { top: r.top, bottom: r.bottom };
+      if (r.need > 0) H += r.need + 1;
     }
 
     const svg = host.append("svg").attr("viewBox", [0, 0, W, H]).attr("width", "100%")
