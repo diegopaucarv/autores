@@ -4,33 +4,19 @@
   const $ = (id) => document.getElementById(id);
   const CY = new Date().getFullYear();
   const MISSING = "(vacío)";
-  let color = d3.scaleOrdinal(d3.schemeTableau10);
+  const NEUTRAL = "#9aa3ad";
+  const PALETTE = ["#3b6ea8", "#d9822b", "#4a9a7b", "#c4504d", "#8a6bb0", "#b8a13a", "#3f9cae", "#c9739c", "#7a8f3c", "#8c6b4f", "#5b6a9a", "#d1a35f"];
+  let color = () => NEUTRAL;
+  const isTime = (c) => c && (c.includes("cohort") || c.includes("century"));
+  // Un color por valor de la variable de color, asignado por orden (sin colisiones por hash); lo desconocido es gris.
   function updateColorScale(dims) {
-    if (!dims) return;
-    const isTime = (c) => c && (c.includes("cohort") || c.includes("century"));
-    if (isTime(S.colorKey)) {
-      const dim = dims.find((d) => d.key === S.colorKey);
-      const domain = dim ? dim.values.map((x) => x.value) : [];
-      const L = domain.length;
-      
-      // Gradiente monocromático estricto: de celeste muy claro a azul marino muy oscuro
-      color = d3.scaleOrdinal()
-        .domain(domain)
-        .range(domain.map((_, i) => d3.interpolateBlues(0.15 + (i / Math.max(1, L - 1)) * 0.85)));
-    } else {
-      // For categorical, let's try schemeSet3 for a softer, distinct set, 
-      // or schemePaired if more items. Let's stick to Tableau10 but 
-      // we can add a fallback if we have more than 10 categories
-      const catColor = d3.scaleOrdinal(d3.schemeTableau10);
-      color = (v) => {
-        // Simple hash to map unknown values to the 10 colors consistently
-        let hash = 0;
-        for (let i = 0; i < v.length; i++) hash = v.charCodeAt(i) + ((hash << 5) - hash);
-        return catColor(Math.abs(hash) % 10);
-      };
-      color.domain = catColor.domain;
-      color.range = catColor.range;
-    }
+    const dim = dims && dims.find((d) => d.key === S.colorKey);
+    const domain = dim ? dim.values.map((x) => x.value) : [], L = domain.length;
+    const range = isTime(S.colorKey)
+      ? domain.map((_, i) => d3.interpolateBlues(0.3 + 0.65 * (i / Math.max(1, L - 1))))
+      : L <= PALETTE.length ? PALETTE.slice(0, L) : d3.quantize((t) => d3.interpolateSinebow(t), L);
+    const m = new Map(domain.map((v, i) => [v, range[i]]));
+    color = (v) => m.get(v) || NEUTRAL;
   }
   const WARN = {
     verify_alive: "vivo con ≥95 años: verificar", birth_approx: "nacimiento aproximado",
@@ -103,7 +89,7 @@
         const v = sel.value, other = S.cols.findIndex((c, i) => i !== slot && c && c === v);
         if (other >= 0) S.cols[other] = S.cols[slot];
         S.cols[slot] = v || null; S.cols = S.cols.filter((c, i) => c || i < 2);
-        if (!S.cols.includes(S.colorKey)) { S.colorKey = S.cols[0]; updateColorScale(S.ds.dimensions); }
+        
         renderSelectors(); renderAll();
       });
       return sel;
@@ -125,8 +111,7 @@
     return v ? v.split(Dataset.CFG.MULTI_SEP).map((x) => x.trim()).filter(Boolean) : [MISSING];
   };
 
-  function renderAll() { renderLegend(); renderSankey(); renderTimeline(); if (pinnedIds) setPinned(pinnedIds); }
-  function setPinned(ids) { pinnedIds = ids && ids.size ? ids : null; const keep = pinnedIds; pinnedIds = null; highlight(keep, false); pinnedIds = keep; }
+  function renderAll() { renderLegend(); renderSankey(); renderTimeline(); paint(); }
   function reanalyze() {
     S.ds = Dataset.analyze(S.ds.items, { currentYear: CY, file: S.file, format: S.ds.report.format, delimiter: S.ds.report.delimiter });
     const keys = S.ds.dimensions.map((d) => d.key);
@@ -145,35 +130,21 @@
     });
   }
 
-  /* ---------- brushing & linking (con modo sticky) ---------- */
+  /* ---------- brushing & linking: fijado > hover > búsqueda ---------- */
+  let hoverIds = null, searchIds = null;
+  function setPinned(ids) { pinnedIds = ids && ids.size ? ids : null; paint(); }
+  function setSearch(ids) { searchIds = ids || null; paint(); }
   function highlight(ids, isClick = false) {
-    if (isClick) {
-      if (pinnedIds && ids && pinnedIds.size === ids.size && [...pinnedIds].every(v => ids.has(v))) {
-        pinnedIds = null; // Toggle off if clicked again
-      } else {
-        pinnedIds = ids;
-      }
-    }
-    
-    // If pinned, ignore standard hover events
-    if (pinnedIds && !isClick) return;
-
-    const activeIds = pinnedIds || ids;
-    const on = activeIds && activeIds.size;
-    
-    d3.selectAll(".sk-node").style("opacity", (d) => (!on || [...d.ids].some((i) => activeIds.has(i)) ? 1 : 0.15));
-    d3.selectAll(".sk-link").style("opacity", (d) => (!on || [...d.ids].some((i) => activeIds.has(i)) ? 0.7 : 0.06));
-    if (on) {
-        // Add a class or style to highlighted links to make them pop more
-        d3.selectAll(".sk-link").filter((d) => [...d.ids].some((i) => activeIds.has(i)))
-          .style("stroke-opacity", 0.8)
-          .style("stroke-width", (d) => Math.max(2, d.width * 1.2)); 
-    } else {
-        d3.selectAll(".sk-link")
-          .style("stroke-opacity", 0.35)
-          .style("stroke-width", (d) => Math.max(1, d.width));
-    }
-    d3.selectAll(".tl-row").style("opacity", (d) => (!on || activeIds.has(d.id) ? 1 : 0.15));
+    if (isClick) pinnedIds = pinnedIds && ids && pinnedIds.size === ids.size && [...pinnedIds].every((v) => ids.has(v)) ? null : ids;
+    else hoverIds = ids;
+    paint();
+  }
+  function paint() {
+    const act = pinnedIds || hoverIds || searchIds, hit = (set) => [...set].some((i) => act.has(i));
+    const found = (set) => !!searchIds && searchIds.size > 0 && [...set].some((i) => searchIds.has(i));
+    d3.selectAll(".sk-node").classed("dim", (d) => !!act && !hit(d.ids)).classed("match", (d) => found(d.ids));
+    d3.selectAll(".sk-link").classed("dim", (d) => !!act && !hit(d.ids)).classed("hot", (d) => !!act && hit(d.ids));
+    d3.selectAll(".tl-row").classed("dim", (d) => !!act && !act.has(d.id));
   }
 
   /* ---------- Sankey ---------- */
@@ -183,18 +154,20 @@
     if (cols.length < 2) return;
     const nodes = new Map(), links = new Map();
     const node = (c, v) => { const id = c + "::" + v; if (!nodes.has(id)) nodes.set(id, { id, label: v, col: c, ids: new Set() }); return nodes.get(id); };
+    const ck = S.colorKey, ci = cols.indexOf(ck), extra = ci < 0 && !!ck;
     items.forEach((it) => {
       const vs = cols.map((c) => vals(it, c));
       const combos = vs.reduce((acc, a) => acc.flatMap((p) => a.map((v) => [...p, v])), [[]]);
-      const w = 1; // 1 unit per branch ensures it behaves as a duplicated entry for Sankey flows
-      combos.forEach((combo) => {
+      const cvs = extra ? vals(it, ck) : [null], w = 1 / cvs.length; // peso fraccional: la altura de los nodos no se infla
+      cvs.forEach((cv) => combos.forEach((combo) => {
+        const cval = ci >= 0 ? combo[ci] : cv;
         combo.forEach((v, i) => node(cols[i], v).ids.add(it.id));
         for (let i = 0; i < combo.length - 1; i++) {
-          const s = cols[i] + "::" + combo[i], t = cols[i + 1] + "::" + combo[i + 1], k = s + ">" + t;
-          if (!links.has(k)) links.set(k, { source: s, target: t, value: 0, ids: new Set() });
+          const s0 = cols[i] + "::" + combo[i], t = cols[i + 1] + "::" + combo[i + 1], k = s0 + ">" + t + ">" + cval;
+          if (!links.has(k)) links.set(k, { source: s0, target: t, value: 0, ids: new Set(), cval });
           const L = links.get(k); L.value += w; L.ids.add(it.id);
         }
-      });
+      }));
     });
     const W = 1100, perCol = d3.max(cols, (c) => [...nodes.values()].filter((n) => n.col === c).length);
     const isName = cols.includes("name");
@@ -217,7 +190,7 @@
     });
     
     svg.append("g").attr("fill", "none").selectAll("path").data(g.links).join("path").attr("class", "sk-link")
-      .attr("d", d3.sankeyLinkHorizontal()).attr("stroke", (d) => color(d.source.label)).attr("stroke-opacity", 0.35)
+      .attr("d", d3.sankeyLinkHorizontal()).attr("stroke", (d) => color(d.cval))
       .attr("stroke-width", (d) => Math.max(1, d.width))
       .on("mouseenter", (_, d) => highlight(d.ids))
       .on("mouseleave", () => highlight(null))
@@ -231,7 +204,7 @@
       .on("mousemove.tip", (ev, d) => Panel.tipNode(ev, d)).on("mouseleave.tip", Panel.tipHide);
 
     ng.append("rect").attr("x", (d) => d.x0).attr("y", (d) => d.y0).attr("width", (d) => d.x1 - d.x0)
-      .attr("height", (d) => Math.max(2, d.y1 - d.y0)).attr("fill", (d) => color(d.label)).attr("stroke", "#222").attr("stroke-width", 0.5);
+      .attr("height", (d) => Math.max(2, d.y1 - d.y0)).attr("fill", (d) => (d.col === ck ? color(d.label) : NEUTRAL));
     const txt = ng.append("text").attr("class", "lbl")
       .attr("text-anchor", (d) => (d.col === cols[0] ? "end" : "start"));
       
@@ -258,43 +231,51 @@
       });
     if (Panel.hasExtra()) txt.filter((d) => d.col === "name").append("tspan")
       .attr("x", (d) => (d.col === cols[0] ? d.x0 - 6 : d.x1 + 6)).attr("y", (d) => (d.y0 + d.y1) / 2).attr("dy", "2.5em")
-      .attr("fill", "#7a7f89").style("font-size", "9px").style("font-weight", "400")
+      .attr("fill", "var(--ink-3)").style("font-size", "9px").style("font-weight", "400")
       .text((d) => Panel.extra(items.find((i) => i.id === [...d.ids][0]) || {}));
   }
 
   /* ---------- Timeline ---------- */
+  let gOrd = () => 0;
+  const gKey = (it) => vals(it, S.colorKey)[0];
   function tlCmp(a, b) {
-    const st = (i) => i.__life.birth ?? i.__life.activeStart, m = S.tlSort || "start";
-    if (m === "end") return a.__life.activeEnd - b.__life.activeEnd || st(a) - st(b);
-    if (m === "name") return String(a.name || a.id).localeCompare(String(b.name || b.id), "es");
-    if (m === "group") return String(vals(a, S.colorKey)[0]).localeCompare(String(vals(b, S.colorKey)[0]), "es") || st(a) - st(b);
-    return st(a) - st(b);
+    const L = (i) => i.__life, st = (i) => L(i).birth ?? L(i).activeStart, nm = (i) => String(i.name || i.id), m = S.tlSort || "start";
+    const c = m === "end" ? L(a).activeEnd - L(b).activeEnd : m === "length" ? L(a).activeYears - L(b).activeYears
+      : m === "name" ? nm(a).localeCompare(nm(b), "es") : m === "group" ? gOrd(a) - gOrd(b) : 0;
+    return c || st(a) - st(b) || nm(a).localeCompare(nm(b), "es");
   }
-  function renderTimeline() {
-    const host = d3.select("#timeline"); host.selectAll("*").remove();
-    if (S.cols.includes("name")) {
-        host.append("p").attr("class", "empty").text("Línea de tiempo oculta (las fechas se muestran bajo los nombres en el Sankey).");
-        return;
-    }
-    const rows = S.ds.items.filter((i) => i.__life.valid)
-      .sort(tlCmp);
+  function renderTimeline(animate) {
+    const host = d3.select("#timeline"), prev = new Map();
+    host.selectAll(".tl-row").each(function (d) { prev.set(d.id, this.__y); });
+    host.selectAll("*").remove();
+    const rows = S.ds.items.filter((i) => i.__life.valid);
     if (!rows.length) { host.append("p").attr("class", "empty").text("Sin ítems con fechas válidas."); return; }
-    const RH = 15, T = 28, LW = 190, W = 1100, H = T + rows.length * RH + 6;
-    const start = (i) => i.__life.birth ?? i.__life.activeStart;
+    const dim = S.ds.dimensions.find((x) => x.key === S.colorKey), ord = new Map((dim ? dim.values : []).map((v, i) => [v.value, i]));
+    gOrd = (it) => (ord.has(gKey(it)) ? ord.get(gKey(it)) : 1e6);
+    rows.sort(tlCmp); if (S.tlDesc) rows.reverse();
+    const grouped = S.tlSort === "group", RH = 16, T = 30, LW = 200, W = 1100, GAP = 22;
+    const yOf = new Map(), heads = []; let y = T, last;
+    rows.forEach((it) => {
+      if (grouped && gKey(it) !== last) { last = gKey(it); heads.push({ y, label: last }); y += GAP; }
+      yOf.set(it.id, y); y += RH;
+    });
+    const H = y + 6, start = (i) => i.__life.birth ?? i.__life.activeStart;
     const x = d3.scaleLinear().domain([d3.min(rows, start), CY]).nice().range([LW, W - 12]);
     const svg = host.append("svg").attr("viewBox", [0, 0, W, H]).attr("width", "100%");
     svg.append("g").attr("transform", `translate(0,${T - 6})`)
-      .call(d3.axisTop(x).ticks(12).tickFormat((y) => (y < 0 ? -y + " a.C." : String(y))).tickSize(-(H - T)))
+      .call(d3.axisTop(x).ticks(12).tickFormat((v) => (v < 0 ? -v + " a.C." : String(v))).tickSize(-(H - T)))
       .call((a) => a.selectAll(".tick line").attr("stroke", "#e6e8ec")).call((a) => a.select(".domain").remove());
-    const col = (it) => color(vals(it, S.colorKey)[0]);
-    
-    const r = svg.append("g").selectAll("g").data(rows).join("g").attr("class", "tl-row")
-      .attr("transform", (_, i) => `translate(0,${T + i * RH})`)
+    const col = (it) => color(gKey(it));
+    const hg = svg.append("g").selectAll("g").data(heads).join("g").attr("transform", (h) => `translate(8,${h.y})`);
+    hg.append("rect").attr("y", 3).attr("width", 12).attr("height", 12).attr("rx", 3).attr("fill", (h) => color(h.label));
+    hg.append("text").attr("class", "tl-head").attr("x", 20).attr("y", 13).text((h) => h.label);
+    const r = svg.append("g").selectAll("g").data(rows, (d) => d.id).join("g").attr("class", "tl-row")
+      .each(function (d) { this.__y = yOf.get(d.id); })
+      .attr("transform", (d) => `translate(0,${yOf.get(d.id)})`)
       .on("mouseenter", (_, d) => highlight(new Set([d.id])))
       .on("mouseleave", () => highlight(null))
       .on("click", (ev, d) => { ev.stopPropagation(); Panel.showItem(d.id); })
       .on("mousemove.tip", (ev, d) => Panel.tipItem(ev, d)).on("mouseleave.tip", Panel.tipHide);
-      
     r.append("text").attr("x", LW - 8).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "end").attr("class", "lbl")
       .text((d) => (d.name || d.id).slice(0, 30));
     r.append("line").attr("x1", (d) => x(start(d))).attr("x2", (d) => x(d.__life.activeEnd)).attr("y1", RH / 2).attr("y2", RH / 2)
@@ -302,8 +283,11 @@
     r.append("rect").attr("x", (d) => x(d.__life.activeStart)).attr("y", 3).attr("height", RH - 6).attr("rx", 2)
       .attr("width", (d) => Math.max(2, x(d.__life.activeEnd) - x(d.__life.activeStart)))
       .attr("fill", col).attr("fill-opacity", (d) => (d.__life.alive ? 0.5 : 0.9))
-      .attr("stroke", col).attr("stroke-dasharray", (d) => (d.__life.alive ? "4 2" : null))
-    ;
+      .attr("stroke", col).attr("stroke-dasharray", (d) => (d.__life.alive ? "4 2" : null));
+    if (animate && prev.size && !matchMedia("(prefers-reduced-motion: reduce)").matches)
+      r.attr("transform", (d) => `translate(0,${prev.has(d.id) ? prev.get(d.id) : yOf.get(d.id)})`)
+        .transition().duration(500).attr("transform", (d) => `translate(0,${yOf.get(d.id)})`);
+    paint();
   }
 
   /* ---------- exportar ---------- */
@@ -320,10 +304,14 @@
     
     // Clear pinned elements when clicking on the background
     document.addEventListener("click", (e) => {
-       if (e.target.closest && e.target.closest("#detail,.bar,#selectors,.bar2,#report")) return;
+       if (e.target.closest && e.target.closest("#detail,.top,.panel-head,.legend,#report")) return;
        if (pinnedIds) { highlight(null, true); Panel.close(); }
     });
-    $("tl-sort").addEventListener("change", (e) => { S.tlSort = e.target.value; renderTimeline(); if (pinnedIds) setPinned(pinnedIds); });
+    $("tl-sort").addEventListener("change", (e) => { S.tlSort = e.target.value; renderTimeline(true); });
+    $("tl-dir").addEventListener("click", (e) => {
+      S.tlDesc = !S.tlDesc; e.currentTarget.textContent = S.tlDesc ? "↓" : "↑";
+      e.currentTarget.setAttribute("aria-label", S.tlDesc ? "Orden descendente" : "Orden ascendente"); renderTimeline(true);
+    });
     Panel.init(S, S.api);
     
     // Dynamic Cohort Slider
@@ -343,6 +331,6 @@
 
     FolderSelector.setup({ container: $("fs"), dataDir: "data/", onText: boot });
   });
-  S.api = { CY, WARN, color: () => color, cols: () => S.cols, renderAll, reanalyze, setPinned };
+  S.api = { CY, WARN, color: () => color, cols: () => S.cols, renderAll, reanalyze, setPinned, setSearch };
   window.__app = S;
 })();

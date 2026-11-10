@@ -36,7 +36,7 @@
     if (changed) ds = Dataset.analyze(ds.items, { currentYear: A.CY, file: name, format: ds.report.format, delimiter: ds.report.delimiter });
     S.ds = ds;
     const tcs = textCols(); showText = new Set(lsGet("txt:" + name, tcs.slice(0, 1)).filter((c) => tcs.includes(c)));
-    renderTextSel(); badge(); $("detail").classList.remove("open");
+    $("search").value = ""; search(""); renderTextSel(); badge(); $("detail").classList.remove("open");
     return ds;
   }
 
@@ -208,11 +208,21 @@
     $("textsel-list").innerHTML = tcs.map((c) => `<label><input type="checkbox" value="${esc(c)}" ${showText.has(c) ? "checked" : ""}> ${esc(c)}</label>`).join("");
   }
   function search(q) {
-    q = norm(q).trim();
-    if (!q) { $("search-n").textContent = ""; return A.setPinned(null); }
-    const tcs = textCols(), ds = S.ds.dimensions.map((d) => d.key);
-    const ids = new Set(S.ds.items.filter((it) => [it.name, ...tcs.map((c) => it[c]), ...ds.map((k) => it[k])].some((v) => norm(v).includes(q))).map((i) => i.id));
-    $("search-n").textContent = ids.size + " resultado(s)"; A.setPinned(ids);
+    const box = $("search-results"), n = norm(q).trim();
+    if (!n) { A.setSearch(null); box.hidden = true; box.innerHTML = ""; $("search-n").textContent = ""; return; }
+    const tk = n.split(/\s+/), fields = ["name", ...textCols(), ...S.ds.dimensions.filter((d) => d.key !== "name").map((d) => d.key)], hits = [];
+    S.ds.items.forEach((it) => {
+      const hay = fields.map((f) => norm(it[f]));
+      if (!tk.every((t) => hay.some((h) => h.includes(t)))) return;
+      hits.push({ it, byName: hay[0].includes(tk[0]), f: fields[Math.max(0, hay.findIndex((h) => h.includes(tk[0])))] });
+    });
+    hits.sort((a, b) => b.byName - a.byName || nameOf(a.it).localeCompare(nameOf(b.it), "es"));
+    A.setSearch(new Set(hits.map((h) => h.it.id)));
+    $("search-n").textContent = hits.length + (hits.length === 1 ? " resultado" : " resultados");
+    box.hidden = false;
+    box.innerHTML = hits.length
+      ? hits.slice(0, 8).map((h) => `<button type="button" class="res" data-id="${esc(h.it.id)}"><b>${esc(nameOf(h.it))}</b><small>${h.byName ? esc(lifeText(h.it)) : esc(((dimOf(h.f) || {}).label || h.f) + ": " + trunc(h.it[h.f], 50))}</small></button>`).join("") + (hits.length > 8 ? `<div class="more">+${hits.length - 8} más resaltados en el gráfico</div>` : "")
+      : '<div class="more">Sin coincidencias</div>';
   }
   function download(name, body, type) {
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([body], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -230,7 +240,21 @@
     S = state; A = api;
     $("detail").addEventListener("click", (e) => e.stopPropagation());
     $("undo").onclick = undo; $("redo").onclick = redo; $("discard").onclick = discard;
-    $("search").addEventListener("input", (e) => search(e.target.value));
+    const inp = $("search"), res = $("search-results"), pick = (id) => { res.hidden = true; showItem(id); };
+    inp.addEventListener("input", () => search(inp.value));
+    inp.addEventListener("focus", () => { if (inp.value.trim()) res.hidden = false; });
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { inp.value = ""; search(""); inp.blur(); }
+      if (e.key === "Enter") { const b = res.querySelector(".res"); if (b) pick(b.dataset.id); }
+    });
+    res.addEventListener("click", (e) => { const b = e.target.closest(".res"); if (b) pick(b.dataset.id); });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("#searchbox")) res.hidden = true;
+      document.querySelectorAll("details.menu[open]").forEach((m) => { if (!m.contains(e.target)) m.open = false; });
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName || "")) { e.preventDefault(); inp.focus(); inp.select(); }
+    });
     $("textsel-list").addEventListener("change", () => {
       showText = new Set([...$("textsel-list").querySelectorAll("input:checked")].map((i) => i.value));
       lsSet("txt:" + file, [...showText]); $("textsel-n").textContent = showText.size; A.renderAll();
