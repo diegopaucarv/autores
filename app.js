@@ -177,6 +177,9 @@
 
   /* ---------- brushing & linking: fijado > hover > búsqueda ---------- */
   let hoverIds = null, searchIds = null;
+  // En pantallas táctiles no hay hover: el resaltado se quedaría pegado tras un toque.
+  // Ahí sólo el toque (fijar) resalta.
+  const NO_HOVER = matchMedia("(hover: none), (pointer: coarse)").matches;
   function setPinned(ids) { pinnedIds = ids && ids.size ? ids : null; paint(); }
   function setSearch(ids) { searchIds = ids || null; paint(); }
   // Filtrar: fija (o libera, si es la misma) la selección sin abrir la ficha; cierra la que estuviera abierta.
@@ -187,6 +190,7 @@
   const onLabel = (ev) => !!(ev.target.closest && ev.target.closest(".lbl"));
   function highlight(ids, isClick = false) {
     if (isClick) pinnedIds = pinnedIds && ids && pinnedIds.size === ids.size && [...pinnedIds].every((v) => ids.has(v)) ? null : ids;
+    else if (NO_HOVER) return;
     else hoverIds = ids;
     paint();
   }

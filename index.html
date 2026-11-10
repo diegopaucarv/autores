@@ -1055,6 +1055,12 @@
                     max-width: 90px;
                 }
             }
+            /* Sin hover real (táctil) el tooltip se queda pegado en pantalla: se oculta. */
+            @media (hover: none), (pointer: coarse) {
+                #tip {
+                    display: none;
+                }
+            }
             @media (prefers-reduced-motion: reduce) {
                 *,
                 *::before,

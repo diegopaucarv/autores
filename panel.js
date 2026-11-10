@@ -264,14 +264,20 @@
   }
 
   /* ---------------- tooltips ---------------- */
-  function tip(ev, html) { const t = $("tip"); t.innerHTML = html; t.classList.add("show"); place(ev); }
+  // En pantallas táctiles no hay hover: el tooltip quedaría pegado en pantalla tras un toque.
+  const noHoverMQ = matchMedia("(hover: none), (pointer: coarse)");
+  const canHover = () => !noHoverMQ.matches;
+  const tipHide = () => $("tip").classList.remove("show");
+  function tip(ev, html) {
+    if (!canHover()) { tipHide(); return; }
+    const t = $("tip"); t.innerHTML = html; t.classList.add("show"); place(ev);
+  }
   function place(ev) {
     const t = $("tip"), pad = 14, w = t.offsetWidth, h = t.offsetHeight;
     let x = ev.clientX + pad, y = ev.clientY + pad;
     if (x + w > innerWidth - pad) x = ev.clientX - w - pad; if (y + h > innerHeight - pad) y = ev.clientY - h - pad;
     t.style.left = x + "px"; t.style.top = y + "px";
   }
-  const tipHide = () => $("tip").classList.remove("show");
   function tipItem(ev, it) {
     if (!it) return;
     const texts = [...showText].map((c) => it[c] ? `<div><span class="m">${esc(c)}:</span> ${esc(trunc(it[c], 170))}</div>` : "").join("");
