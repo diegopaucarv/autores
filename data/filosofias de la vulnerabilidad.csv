@@ -1,102 +1,102 @@
-﻿name,gender,continent,birth_year,death_year,category,desigualdad_nivel,school_of_thought_era,notes
-Marguerite Porete,M,Europa,1250,1310,3T,,Mística beguina / Medieval,Quemada por herejía
-Wang Yangming,H,Asia,1472,1529,3T,,Neoconfucianismo (Escuela de la Mente) / Renacimiento,Liangzhi
-Angelus Silesius,H,Europa,1624,1677,3T,,Mística especulativa / Teología negativa / Barroco,La rosa sin porqué
-Abhinavagupta,H,Asia,950,1016,3T,,Shaivismo de Cachemira (Pratyabhijñā) / Medieval,Reconocimiento (pratyabhijñā)
-Bankei Yōtaku,H,Asia,1622,1693,3T,,Zen Rinzai (No Nacido) / Tokugawa,Fushō
-Isaac de Nínive,H,Asia,613,700,3T,,Mística siríaca (Iglesia de Oriente) / Patrística,Corazón misericordioso
-Jacob Boehme,H,Europa,1575,1624,3T,,Teosofía luterana / Reforma-Barroco,Ungrund
-Félix Ravaisson,H,Europa,1813,1900,Vunerabilidad+Calma,,Espiritualismo francés / Siglo XIX,Hábito como sabiduría del cuerpo
-Najman de Breslov,H,Europa,1772,1810,3T,,Jasidismo (Breslov) / Ilustración-Romanticismo,Hitbodedut
-Kalonymus Kalman Shapira,H,Europa,1889,1943,3T+Desigualdades,Nivel 3 · caso límite,Jasidismo (Piaseczno) / Siglo XX,Esh Kodesh en el gueto
-Evagrio Póntico,H,Asia,345,399,Vunerabilidad+Calma,,Monacato del desierto / Origenismo / Patrística,Apatheia y logismoi
-Tomás de Kempis,H,Europa,1380,1471,Vunerabilidad+Autorespeto,,Devotio Moderna / Medieval,Imitación de Cristo
-Anónimo (La nube del no saber),,Europa,1300,1400,Vunerabilidad+Autorespeto,,Mística inglesa apofática / Medieval,Nube de olvido
-Lao-Tse,H,Asia,-600,-500,3T,,Taoísmo / Antigüedad,Wu wei y pu
-Michel Henry,H,Europa,1922,2002,3T,,Fenomenología material (auto-afección) / Siglo XX,Vida auto-afectiva
-Eugene Gendlin,H,Europa,1926,2017,3T,,Fenomenología clínica (felt sense) / Siglo XX,Felt shift
-D.W. Winnicott,H,Europa,1896,1971,3T+Desigualdades,Nivel 2 · clínica/ambiental,Psicoanálisis relacional (true self) / Siglo XX,Holding y true self
-Alice Miller,M,Europa,1923,2010,3T+Desigualdades,Nivel 2 · clínica/ambiental,Psicoanálisis del trauma infantil / Siglo XX,El drama del niño dotado
-Francine Shapiro,M,Norteamérica,1948,2019,3T+Desigualdades,Nivel 2 · clínica/ambiental,Psicología clínica (EMDR) / Siglo XX-XXI,Evidencia empírica
+name,gender,continent,birth_year,death_year,category,desigualdad_nivel,school_of_thought_era,notes
+Marguerite Porete,M,Europa,1250,1310.0,3T,No especificado,Mística beguina / Medieval,Quemada por herejía
+Wang Yangming,H,Asia,1472,1529.0,3T,No especificado,Neoconfucianismo (Escuela de la Mente) / Renacimiento,Liangzhi
+Angelus Silesius,H,Europa,1624,1677.0,3T,No especificado,Mística especulativa / Teología negativa / Barroco,La rosa sin porqué
+Abhinavagupta,H,Asia,950,1016.0,3T,No especificado,Shaivismo de Cachemira (Pratyabhijñā) / Medieval,Reconocimiento (pratyabhijñā)
+Bankei Yōtaku,H,Asia,1622,1693.0,3T,No especificado,Zen Rinzai (No Nacido) / Tokugawa,Fushō
+Isaac de Nínive,H,Asia,613,700.0,3T,No especificado,Mística siríaca (Iglesia de Oriente) / Patrística,Corazón misericordioso
+Jacob Boehme,H,Europa,1575,1624.0,3T,No especificado,Teosofía luterana / Reforma-Barroco,Ungrund
+Félix Ravaisson,H,Europa,1813,1900.0,Vunerabilidad+Calma,No especificado,Espiritualismo francés / Siglo XIX,Hábito como sabiduría del cuerpo
+Najman de Breslov,H,Europa,1772,1810.0,3T,No especificado,Jasidismo (Breslov) / Ilustración-Romanticismo,Hitbodedut
+Kalonymus Kalman Shapira,H,Europa,1889,1943.0,3T+Desigualdades,Nivel 3 · caso límite,Jasidismo (Piaseczno) / Siglo XX,Esh Kodesh en el gueto
+Evagrio Póntico,H,Asia,345,399.0,Vunerabilidad+Calma,No especificado,Monacato del desierto / Origenismo / Patrística,Apatheia y logismoi
+Tomás de Kempis,H,Europa,1380,1471.0,Vunerabilidad+Autorespeto,No especificado,Devotio Moderna / Medieval,Imitación de Cristo
+Anónimo (La nube del no saber),,Europa,1300,1400.0,Vunerabilidad+Autorespeto,No especificado,Mística inglesa apofática / Medieval,Nube de olvido
+Lao-Tse,H,Asia,-600,-500.0,3T,No especificado,Taoísmo / Antigüedad,Wu wei y pu
+Michel Henry,H,Europa,1922,2002.0,3T,No especificado,Fenomenología material (auto-afección) / Siglo XX,Vida auto-afectiva
+Eugene Gendlin,H,Europa,1926,2017.0,3T,No especificado,Fenomenología clínica (felt sense) / Siglo XX,Felt shift
+D.W. Winnicott,H,Europa,1896,1971.0,3T+Desigualdades,Nivel 2 · clínica/ambiental,Psicoanálisis relacional (true self) / Siglo XX,Holding y true self
+Alice Miller,M,Europa,1923,2010.0,3T+Desigualdades,Nivel 2 · clínica/ambiental,Psicoanálisis del trauma infantil / Siglo XX,El drama del niño dotado
+Francine Shapiro,M,Norteamérica,1948,2019.0,3T+Desigualdades,Nivel 2 · clínica/ambiental,Psicología clínica (EMDR) / Siglo XX-XXI,Evidencia empírica
 Peter Levine,H,Norteamérica,1942,,3T+Desigualdades,Nivel 2 · clínica/ambiental,Somatic Experiencing / Siglo XX-XXI,Nivel reptiliano clínico
 Bessel van der Kolk,H,Europa,1943,,3T+Desigualdades,Nivel 2 · clínica/ambiental,Psicotraumatología somática / Siglo XX-XXI,The Body Keeps the Score
 Pat Ogden,M,Norteamérica,1940,,3T+Desigualdades,Nivel 2 · clínica/ambiental,Sensorimotor Psychotherapy / Siglo XX-XXI,Integración somática
-Iris Murdoch,M,Europa,1919,1999,3T,,Platonismo moral / Ética de la atención / Siglo XX,Unselfing
-Gaston Bachelard,H,Europa,1884,1962,3T,,Fenomenología de la ensoñación / Siglo XX,Infancia inmensa
+Iris Murdoch,M,Europa,1919,1999.0,3T,No especificado,Platonismo moral / Ética de la atención / Siglo XX,Unselfing
+Gaston Bachelard,H,Europa,1884,1962.0,3T,No especificado,Fenomenología de la ensoñación / Siglo XX,Infancia inmensa
 Ronald Purser,H,Norteamérica,1963,,3T+Desigualdades,Nivel 1 · estructural,Budismo crítico / McMindfulness / Siglo XXI,Crítica a la atención neoliberal
-Mari Ruti,M,Norteamérica,1966,2023,3T+Desigualdades,Nivel 1 · estructural,Psicoanálisis y ética de la singularidad / Siglo XXI,Singularity of Being
+Mari Ruti,M,Norteamérica,1966,2023.0,3T+Desigualdades,Nivel 1 · estructural,Psicoanálisis y ética de la singularidad / Siglo XXI,Singularity of Being
 Sandra Laugier,M,Europa,1961,,3T+Desigualdades,Nivel 1 · estructural,Ética del cuidado (Wittgensteiniano) / Siglo XXI,Tous vulnérables?
-Juan Casiano,H,Europa,360,435,3T,,Monacato (apatheia y caritas) / Patrística,Colaciones
-Ignacio de Loyola,H,Europa,1491,1556,3T,,Espiritualidad ignaciana (consuelo) / Renacimiento,Discernimiento
-Buda (Siddhartha Gautama),H,Asia,-563,-483,3T,,Budismo (samatha y metta) / Antigüedad,Satipatthana
-Ruusbroec,H,Europa,1293,1381,3T,,Mística flamenca (fondo del alma) / Medieval,La piedra brillante
-Baruch Spinoza,H,Europa,1632,1677,Vunerabilidad+Autorespeto,,Racionalismo panteísta (conatus) / Barroco,Amor intellectualis Dei
-Maine de Biran,H,Europa,1766,1824,Vunerabilidad+Calma,,Espiritualismo (fait primitif) / Ilustración-Romanticismo,Conciencia inmediata
-Henri Maldiney,H,Europa,1912,2013,Vunerabilidad+Calma,,Fenomenología (transpasibilidad) / Siglo XX,Penser l'homme et la folie
-Claire Petitmengin,M,Europa,1962,,Vunerabilidad+Calma,,Micro-fenomenología / Siglo XXI,Método riguroso
-Pierre Vermersch,H,Europa,1946,2020,Vunerabilidad+Calma,,Micro-fenomenología / Siglo XX-XXI,Entretien d'explicitation
-R.D. Laing,H,Europa,1927,1989,Vunerabilidad+Calma,,Antipsiquiatría (inseguridad ontológica) / Siglo XX,El yo dividido
-María Zambrano,M,Europa,1904,1991,Vunerabilidad+Calma,,Razón poética / Siglo XX,La aurora del ser
-Henri Bergson,H,Europa,1859,1941,Vunerabilidad+Calma,,Espiritualismo (duración) / Siglo XIX-XX,Yo profundo
-Michel Foucault,H,Europa,1926,1984,Vunerabilidad+Calma,,Postestructuralismo (cuidado de sí) / Siglo XX,Askesis y cuidado de sí
-Thomas Fuchs,H,Europa,1957,,Vunerabilidad+Calma,,Neurofenomenología (resonancia) / Siglo XXI,Ecology of the Brain
-Matthew Ratcliffe,H,Europa,1973,,Vunerabilidad+Calma,,Fenomenología de la psiquiatría / Siglo XXI,Existential feelings
-Ann Cvetkovich,M,Norteamérica,1962,,Vunerabilidad+Calma,,Teoría queer (archivos de sentimiento) / Siglo XXI,Depression: A Public Feeling
-Veena Das,M,Asia,1945,,Vunerabilidad+Calma,,Antropología de lo ordinario / Siglo XX-XXI,Life and Words
-Yves Citton,H,Europa,1962,,Vunerabilidad+Calma,,Ecología de la atención / Siglo XXI,The Ecology of Attention
-Pierre Janet,H,Europa,1859,1947,Vunerabilidad+Calma,,Psicología clínica (disociación) / Siglo XIX-XX,Síntesis personal
-Johann Georg Hamann,H,Europa,1730,1788,Vunerabilidad+Autorespeto,,Irracionalismo luterano (Mago del Norte) / Ilustración,La razón es sensible
-Franz von Baader,H,Europa,1765,1841,Vunerabilidad+Autorespeto,,Teosofía católica / Romanticismo,Sentido interno
-Yehudá Halevi,H,Europa,1075,1141,Vunerabilidad+Autorespeto,,Filosofía judía (Kuzari) / Medieval,El Dios de Abraham
-Bajya ibn Paquda,H,Europa,1050,1120,Vunerabilidad+Autorespeto,,Ética judía (Deberes del corazón) / Medieval,Deberes internos
-Simone Weil,M,Europa,1909,1943,Vunerabilidad+Autorespeto,,Mística y filosofía de la atención / Siglo XX,Décréation y atención
-Adriana Cavarero,M,Europa,1947,,Vunerabilidad+Autorespeto,,Feminismo (vulnerabilidad ontológica) / Siglo XX-XXI,Horrorism y Relating Narratives
-Judith Butler,NB,Norteamérica,1956,,Vunerabilidad+Autorespeto,,Postestructuralismo (vulnerabilidad) / Siglo XX-XXI,Vida precaria
-Emmanuel Levinas,H,Europa,1906,1995,Vunerabilidad+Autorespeto,,Fenomenología ética (el Rostro) / Siglo XX,Il y a e hipóstasis
-Vladimir Jankélévitch,H,Europa,1903,1985,Vunerabilidad+Autorespeto,,Filosofía de lo mínimo (je-ne-sais-quoi) / Siglo XX,Le presque-rien
-Gabriel Marcel,H,Europa,1889,1973,Vunerabilidad+Autorespeto,,Existencialismo cristiano (encarnación) / Siglo XX,Disponibilidad
-Søren Kierkegaard,H,Europa,1813,1855,Vunerabilidad+Autorespeto,,Existencialismo (yo y fe) / Siglo XIX,El salto
-Axel Honneth,H,Europa,1949,,Vunerabilidad+Autorespeto,,Teoría crítica (reconocimiento) / Siglo XX-XXI,La lucha por el reconocimiento
-Charles Taylor,H,Norteamérica,1931,,Vunerabilidad+Autorespeto,,Hermenéutica (autenticidad) / Siglo XX-XXI,Fuentes del yo
-John Howard Yoder,H,Norteamérica,1927,1997,Vunerabilidad+Autorespeto,,Pacifismo menonita / Siglo XX,Política eclesial
-Stanley Cavell,H,Norteamérica,1926,2018,Vunerabilidad+Autorespeto,,Filosofía ordinaria (acknowledgment) / Siglo XX,The Claim of Reason
-Erinn Gilson,M,Norteamérica,1975,,Vunerabilidad+Autorespeto,,Ética de la vulnerabilidad / Siglo XXI,The Ethics of Vulnerability
-Lauren Berlant,M,Norteamérica,1957,2021,Vunerabilidad+Autorespeto,,Teoría cultural (optimismo cruel) / Siglo XX-XXI,Cruel Optimism
-Roberto Esposito,H,Europa,1950,,Vunerabilidad+Autorespeto,,Filosofía política (communitas) / Siglo XX-XXI,Communitas
-Jean-Luc Nancy,H,Europa,1940,2021,Vunerabilidad+Autorespeto,,Deconstrucción (comunidad inoperante) / Siglo XX-XXI,La communauté désoeuvrée
-Wendy Brown,M,Norteamérica,1955,,Vunerabilidad+Autorespeto,,Teoría política (estados de injuria) / Siglo XX-XXI,States of Injury
-Jacques Rancière,H,Europa,1940,,Vunerabilidad+Autorespeto,,Filosofía política (reparto de lo sensible) / Siglo XX-XXI,Nació en Argel (África)
-Jürgen Habermas,H,Europa,1929,,Calma+Autorespeto,,Teoría crítica (acción comunicativa) / Siglo XX-XXI,"Racionalista, contraste"
-Immanuel Kant,H,Europa,1724,1804,Calma+Autorespeto,,Idealismo trascendental / Ilustración,"Ética del deber, contraste"
-John Rawls,H,Norteamérica,1921,2002,Calma+Autorespeto,,Liberalismo político / Siglo XX,"Justicia como imparcialidad, contraste"
-Martin Heidegger,H,Europa,1889,1976,Vunerabilidad,,Fenomenología hermenéutica (facticidad) / Siglo XX,Autenticidad como confrontación
-Basil Bernstein,H,Europa,1924,2000,Vunerabilidad,,Sociología de la educación (códigos) / Siglo XX,Código elaborado vs. restringido
-Frédéric Lordon,H,Europa,1962,,Vunerabilidad,,Spinozismo político (deseo) / Siglo XXI,"Capitalisme, désir et servitude"
-Hannah Arendt,M,Europa,1906,1975,Vunerabilidad,,Fenomenología política (natalidad) / Siglo XX,Vita activa
-Aristóteles,H,Europa,-384,-322,Vunerabilidad+Calma,,Filosofía clásica griega / Antigüedad,Hexis y eudaimonia
-Sigmund Freud,H,Europa,1856,1939,Vunerabilidad,,Psicoanálisis / Siglo XIX-XX,Recuperar lo que la infancia no pudo ser
-Edmund Husserl,H,Europa,1859,1938,Vunerabilidad,,Fenomenología / Siglo XIX-XX,Mundo de la vida (criticado por Henry)
-Wilhelm Dilthey,H,Europa,1833,1911,Vunerabilidad+Calma,,Hermenéutica / Siglo XIX-XX,Vivencia y comprensión
-Ludwig Wittgenstein,H,Europa,1889,1951,Vunerabilidad,,Filosofía analítica / Siglo XX,Lenguaje ordinario (tradición de Cavell)
-John Langshaw Austin,H,Europa,1911,1960,Vunerabilidad,,Filosofía del lenguaje ordinario / Siglo XX,Actos de habla
-Carol Gilligan,M,Norteamérica,1936,,Vunerabilidad+Autorespeto,,Ética del cuidado / Siglo XX-XXI,In a Different Voice
-Nel Noddings,M,Norteamérica,1929,2022,Vunerabilidad+Autorespeto,,Ética del cuidado / Siglo XX-XXI,Caring
-Joan Tronto,M,Norteamérica,1952,,Vunerabilidad+Autorespeto,,Ética del cuidado / Siglo XX-XXI,Moral Boundaries
-Takeo Doi,H,Asia,1920,2009,Vunerabilidad,,Psicoanálisis cultural japonés / Siglo XX,Amae
-Hermann Schmitz,H,Europa,1928,2021,Vunerabilidad+Calma,,Nueva Fenomenología / Siglo XX-XXI,Leib y atmósferas
-Mark Fisher,H,Europa,1968,2017,Vunerabilidad,,Teoría crítica cultural / Siglo XX-XXI,Realismo capitalista
-Byung-Chul Han,H,Asia,1959,,Vunerabilidad,,Filosofía de la cultura / Siglo XX-XXI,Sociedad del cansancio
-Theodor Adorno,H,Europa,1903,1969,Vunerabilidad,,Escuela de Frankfurt / Siglo XX,Dialéctica negativa
-Hans-Georg Gadamer,H,Europa,1900,2002,Vunerabilidad+Autorespeto,,Hermenéutica / Siglo XX,Fusión de horizontes
-Paul Ricoeur,H,Europa,1913,2005,Vunerabilidad+Autorespeto,,Hermenéutica / Siglo XX,Identidad narrativa
-Pierre Hadot,H,Europa,1922,2010,Calma,,Filosofía antigua / Siglo XX-XXI,Ejercicios espirituales
-Dietrich Bonhoeffer,H,Europa,1906,1945,Vunerabilidad+Autorespeto,,Teología luterana / Siglo XX,Stellvertretung
-Chantal Mouffe,M,Europa,1943,,Vunerabilidad,,Teoría política / Siglo XX-XXI,Agonismo
-Stanley Hauerwas,H,Norteamérica,1940,,Calma+Autorespeto,,Teología política / Siglo XX-XXI,La Iglesia como ética social
-Miranda Fricker,M,Europa,1966,,Vunerabilidad,,Epistemología / Siglo XXI,Injusticia hermenéutica
-Judith Herman,M,Norteamérica,1942,,3T,,Psiquiatría del trauma / Siglo XX-XXI,Trauma and Recovery
-Richard Nisbett,H,Norteamérica,1941,,Vunerabilidad,,Psicología cultural / Siglo XX-XXI,The Geography of Thought
-Shinobu Kitayama,H,Asia,1957,,Vunerabilidad,,Psicología cultural / Siglo XX-XXI,Self-construal
-Stephen Porges,H,Norteamérica,1945,,Calma,,Neurociencia afectiva / Siglo XX-XXI,Teoría polivagal
-Erik Erikson,H,Europa,1902,1994,Vunerabilidad+Calma,,Psicoanálisis del desarrollo / Siglo XX,Basic trust
-Elaine Aron,M,Norteamérica,1944,,Vunerabilidad,,Psicología de la sensibilidad / Siglo XX-XXI,HSP (highly sensitive person)
+Juan Casiano,H,Europa,360,435.0,3T,No especificado,Monacato (apatheia y caritas) / Patrística,Colaciones
+Ignacio de Loyola,H,Europa,1491,1556.0,3T,No especificado,Espiritualidad ignaciana (consuelo) / Renacimiento,Discernimiento
+Buda (Siddhartha Gautama),H,Asia,-563,-483.0,3T,No especificado,Budismo (samatha y metta) / Antigüedad,Satipatthana
+Ruusbroec,H,Europa,1293,1381.0,3T,No especificado,Mística flamenca (fondo del alma) / Medieval,La piedra brillante
+Baruch Spinoza,H,Europa,1632,1677.0,Vunerabilidad+Autorespeto,No especificado,Racionalismo panteísta (conatus) / Barroco,Amor intellectualis Dei
+Maine de Biran,H,Europa,1766,1824.0,Vunerabilidad+Calma,No especificado,Espiritualismo (fait primitif) / Ilustración-Romanticismo,Conciencia inmediata
+Henri Maldiney,H,Europa,1912,2013.0,Vunerabilidad+Calma,No especificado,Fenomenología (transpasibilidad) / Siglo XX,Penser l'homme et la folie
+Claire Petitmengin,M,Europa,1962,,Vunerabilidad+Calma,No especificado,Micro-fenomenología / Siglo XXI,Método riguroso
+Pierre Vermersch,H,Europa,1946,2020.0,Vunerabilidad+Calma,No especificado,Micro-fenomenología / Siglo XX-XXI,Entretien d'explicitation
+R.D. Laing,H,Europa,1927,1989.0,Vunerabilidad+Calma,No especificado,Antipsiquiatría (inseguridad ontológica) / Siglo XX,El yo dividido
+María Zambrano,M,Europa,1904,1991.0,Vunerabilidad+Calma,No especificado,Razón poética / Siglo XX,La aurora del ser
+Henri Bergson,H,Europa,1859,1941.0,Vunerabilidad+Calma,No especificado,Espiritualismo (duración) / Siglo XIX-XX,Yo profundo
+Michel Foucault,H,Europa,1926,1984.0,Vunerabilidad+Calma,No especificado,Postestructuralismo (cuidado de sí) / Siglo XX,Askesis y cuidado de sí
+Thomas Fuchs,H,Europa,1957,,Vunerabilidad+Calma,No especificado,Neurofenomenología (resonancia) / Siglo XXI,Ecology of the Brain
+Matthew Ratcliffe,H,Europa,1973,,Vunerabilidad+Calma,No especificado,Fenomenología de la psiquiatría / Siglo XXI,Existential feelings
+Ann Cvetkovich,M,Norteamérica,1962,,Vunerabilidad+Calma,No especificado,Teoría queer (archivos de sentimiento) / Siglo XXI,Depression: A Public Feeling
+Veena Das,M,Asia,1945,,Vunerabilidad+Calma,No especificado,Antropología de lo ordinario / Siglo XX-XXI,Life and Words
+Yves Citton,H,Europa,1962,,Vunerabilidad+Calma,No especificado,Ecología de la atención / Siglo XXI,The Ecology of Attention
+Pierre Janet,H,Europa,1859,1947.0,Vunerabilidad+Calma,No especificado,Psicología clínica (disociación) / Siglo XIX-XX,Síntesis personal
+Johann Georg Hamann,H,Europa,1730,1788.0,Vunerabilidad+Autorespeto,No especificado,Irracionalismo luterano (Mago del Norte) / Ilustración,La razón es sensible
+Franz von Baader,H,Europa,1765,1841.0,Vunerabilidad+Autorespeto,No especificado,Teosofía católica / Romanticismo,Sentido interno
+Yehudá Halevi,H,Europa,1075,1141.0,Vunerabilidad+Autorespeto,No especificado,Filosofía judía (Kuzari) / Medieval,El Dios de Abraham
+Bajya ibn Paquda,H,Europa,1050,1120.0,Vunerabilidad+Autorespeto,No especificado,Ética judía (Deberes del corazón) / Medieval,Deberes internos
+Simone Weil,M,Europa,1909,1943.0,Vunerabilidad+Autorespeto,No especificado,Mística y filosofía de la atención / Siglo XX,Décréation y atención
+Adriana Cavarero,M,Europa,1947,,Vunerabilidad+Autorespeto,No especificado,Feminismo (vulnerabilidad ontológica) / Siglo XX-XXI,Horrorism y Relating Narratives
+Judith Butler,NB,Norteamérica,1956,,Vunerabilidad+Autorespeto,No especificado,Postestructuralismo (vulnerabilidad) / Siglo XX-XXI,Vida precaria
+Emmanuel Levinas,H,Europa,1906,1995.0,Vunerabilidad+Autorespeto,No especificado,Fenomenología ética (el Rostro) / Siglo XX,Il y a e hipóstasis
+Vladimir Jankélévitch,H,Europa,1903,1985.0,Vunerabilidad+Autorespeto,No especificado,Filosofía de lo mínimo (je-ne-sais-quoi) / Siglo XX,Le presque-rien
+Gabriel Marcel,H,Europa,1889,1973.0,Vunerabilidad+Autorespeto,No especificado,Existencialismo cristiano (encarnación) / Siglo XX,Disponibilidad
+Søren Kierkegaard,H,Europa,1813,1855.0,Vunerabilidad+Autorespeto,No especificado,Existencialismo (yo y fe) / Siglo XIX,El salto
+Axel Honneth,H,Europa,1949,,Vunerabilidad+Autorespeto,No especificado,Teoría crítica (reconocimiento) / Siglo XX-XXI,La lucha por el reconocimiento
+Charles Taylor,H,Norteamérica,1931,,Vunerabilidad+Autorespeto,No especificado,Hermenéutica (autenticidad) / Siglo XX-XXI,Fuentes del yo
+John Howard Yoder,H,Norteamérica,1927,1997.0,Vunerabilidad+Autorespeto,No especificado,Pacifismo menonita / Siglo XX,Política eclesial
+Stanley Cavell,H,Norteamérica,1926,2018.0,Vunerabilidad+Autorespeto,No especificado,Filosofía ordinaria (acknowledgment) / Siglo XX,The Claim of Reason
+Erinn Gilson,M,Norteamérica,1975,,Vunerabilidad+Autorespeto,No especificado,Ética de la vulnerabilidad / Siglo XXI,The Ethics of Vulnerability
+Lauren Berlant,M,Norteamérica,1957,2021.0,Vunerabilidad+Autorespeto,No especificado,Teoría cultural (optimismo cruel) / Siglo XX-XXI,Cruel Optimism
+Roberto Esposito,H,Europa,1950,,Vunerabilidad+Autorespeto,No especificado,Filosofía política (communitas) / Siglo XX-XXI,Communitas
+Jean-Luc Nancy,H,Europa,1940,2021.0,Vunerabilidad+Autorespeto,No especificado,Deconstrucción (comunidad inoperante) / Siglo XX-XXI,La communauté désoeuvrée
+Wendy Brown,M,Norteamérica,1955,,Vunerabilidad+Autorespeto,No especificado,Teoría política (estados de injuria) / Siglo XX-XXI,States of Injury
+Jacques Rancière,H,Europa,1940,,Vunerabilidad+Autorespeto,No especificado,Filosofía política (reparto de lo sensible) / Siglo XX-XXI,Nació en Argel (África)
+Jürgen Habermas,H,Europa,1929,,Calma+Autorespeto,No especificado,Teoría crítica (acción comunicativa) / Siglo XX-XXI,"Racionalista, contraste"
+Immanuel Kant,H,Europa,1724,1804.0,Calma+Autorespeto,No especificado,Idealismo trascendental / Ilustración,"Ética del deber, contraste"
+John Rawls,H,Norteamérica,1921,2002.0,Calma+Autorespeto,No especificado,Liberalismo político / Siglo XX,"Justicia como imparcialidad, contraste"
+Martin Heidegger,H,Europa,1889,1976.0,Vunerabilidad,No especificado,Fenomenología hermenéutica (facticidad) / Siglo XX,Autenticidad como confrontación
+Basil Bernstein,H,Europa,1924,2000.0,Vunerabilidad,No especificado,Sociología de la educación (códigos) / Siglo XX,Código elaborado vs. restringido
+Frédéric Lordon,H,Europa,1962,,Vunerabilidad,No especificado,Spinozismo político (deseo) / Siglo XXI,"Capitalisme, désir et servitude"
+Hannah Arendt,M,Europa,1906,1975.0,Vunerabilidad,No especificado,Fenomenología política (natalidad) / Siglo XX,Vita activa
+Aristóteles,H,Europa,-384,-322.0,Vunerabilidad+Calma,No especificado,Filosofía clásica griega / Antigüedad,Hexis y eudaimonia
+Sigmund Freud,H,Europa,1856,1939.0,Vunerabilidad,No especificado,Psicoanálisis / Siglo XIX-XX,Recuperar lo que la infancia no pudo ser
+Edmund Husserl,H,Europa,1859,1938.0,Vunerabilidad,No especificado,Fenomenología / Siglo XIX-XX,Mundo de la vida (criticado por Henry)
+Wilhelm Dilthey,H,Europa,1833,1911.0,Vunerabilidad+Calma,No especificado,Hermenéutica / Siglo XIX-XX,Vivencia y comprensión
+Ludwig Wittgenstein,H,Europa,1889,1951.0,Vunerabilidad,No especificado,Filosofía analítica / Siglo XX,Lenguaje ordinario (tradición de Cavell)
+John Langshaw Austin,H,Europa,1911,1960.0,Vunerabilidad,No especificado,Filosofía del lenguaje ordinario / Siglo XX,Actos de habla
+Carol Gilligan,M,Norteamérica,1936,,Vunerabilidad+Autorespeto,No especificado,Ética del cuidado / Siglo XX-XXI,In a Different Voice
+Nel Noddings,M,Norteamérica,1929,2022.0,Vunerabilidad+Autorespeto,No especificado,Ética del cuidado / Siglo XX-XXI,Caring
+Joan Tronto,M,Norteamérica,1952,,Vunerabilidad+Autorespeto,No especificado,Ética del cuidado / Siglo XX-XXI,Moral Boundaries
+Takeo Doi,H,Asia,1920,2009.0,Vunerabilidad,No especificado,Psicoanálisis cultural japonés / Siglo XX,Amae
+Hermann Schmitz,H,Europa,1928,2021.0,Vunerabilidad+Calma,No especificado,Nueva Fenomenología / Siglo XX-XXI,Leib y atmósferas
+Mark Fisher,H,Europa,1968,2017.0,Vunerabilidad,No especificado,Teoría crítica cultural / Siglo XX-XXI,Realismo capitalista
+Byung-Chul Han,H,Asia,1959,,Vunerabilidad,No especificado,Filosofía de la cultura / Siglo XX-XXI,Sociedad del cansancio
+Theodor Adorno,H,Europa,1903,1969.0,Vunerabilidad,No especificado,Escuela de Frankfurt / Siglo XX,Dialéctica negativa
+Hans-Georg Gadamer,H,Europa,1900,2002.0,Vunerabilidad+Autorespeto,No especificado,Hermenéutica / Siglo XX,Fusión de horizontes
+Paul Ricoeur,H,Europa,1913,2005.0,Vunerabilidad+Autorespeto,No especificado,Hermenéutica / Siglo XX,Identidad narrativa
+Pierre Hadot,H,Europa,1922,2010.0,Calma,No especificado,Filosofía antigua / Siglo XX-XXI,Ejercicios espirituales
+Dietrich Bonhoeffer,H,Europa,1906,1945.0,Vunerabilidad+Autorespeto,No especificado,Teología luterana / Siglo XX,Stellvertretung
+Chantal Mouffe,M,Europa,1943,,Vunerabilidad,No especificado,Teoría política / Siglo XX-XXI,Agonismo
+Stanley Hauerwas,H,Norteamérica,1940,,Calma+Autorespeto,No especificado,Teología política / Siglo XX-XXI,La Iglesia como ética social
+Miranda Fricker,M,Europa,1966,,Vunerabilidad,No especificado,Epistemología / Siglo XXI,Injusticia hermenéutica
+Judith Herman,M,Norteamérica,1942,,3T,No especificado,Psiquiatría del trauma / Siglo XX-XXI,Trauma and Recovery
+Richard Nisbett,H,Norteamérica,1941,,Vunerabilidad,No especificado,Psicología cultural / Siglo XX-XXI,The Geography of Thought
+Shinobu Kitayama,H,Asia,1957,,Vunerabilidad,No especificado,Psicología cultural / Siglo XX-XXI,Self-construal
+Stephen Porges,H,Norteamérica,1945,,Calma,No especificado,Neurociencia afectiva / Siglo XX-XXI,Teoría polivagal
+Erik Erikson,H,Europa,1902,1994.0,Vunerabilidad+Calma,No especificado,Psicoanálisis del desarrollo / Siglo XX,Basic trust
+Elaine Aron,M,Norteamérica,1944,,Vunerabilidad,No especificado,Psicología de la sensibilidad / Siglo XX-XXI,HSP (highly sensitive person)
