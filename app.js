@@ -201,6 +201,24 @@
     const host = d3.select("#sankey"); host.selectAll("*").remove();
     const cols = S.cols.filter(Boolean), items = S.ds.items;
     if (cols.length < 2) return;
+
+    // --- «Orden»: solo las variables presentes en el color o en las columnas del sankey ---
+    const sortDims = [];
+    [...cols, S.colorKey].forEach((k) => {
+      const d = k && S.ds.dimensions.find((x) => x.key === k);
+      if (d && !sortDims.some((x) => x.key === d.key)) sortDims.push(d);
+    });
+    const sortOpts = [{ key: "value", label: "valor" }, ...sortDims.map((d) => ({ key: d.key, label: d.label }))];
+    if (!sortOpts.some((o) => o.key === S.skSort)) S.skSort = "value";
+    const sortSel = $("sk-sort");
+    if (sortSel) {
+      const sig = sortOpts.map((o) => o.key).join("|");
+      if (sortSel.dataset.sig !== sig) {
+        sortSel.innerHTML = sortOpts.map((o) => `<option value="${esc(o.key)}">${esc(o.label)}</option>`).join("");
+        sortSel.dataset.sig = sig;
+      }
+      if (sortSel.value !== S.skSort) sortSel.value = S.skSort;
+    }
     const nodes = new Map(), links = new Map();
     const node = (c, v) => { const id = c + "::" + v; if (!nodes.has(id)) nodes.set(id, { id, label: v, col: c, ids: new Set() }); return nodes.get(id); };
     const ck = S.colorKey, ci = cols.indexOf(ck), extra = ci < 0 && !!ck;
@@ -255,22 +273,23 @@
 
     // --- orden de los nodos dentro de cada columna (control «Orden») ---
     const skMode = S.skSort || "value", reverse = !!S.skDesc;
-    const dimOrder = new Map(((S.ds.dimensions.find((d) => d.key === S.colorKey) || {}).values || []).map((v, i) => [v.value, i]));
+    const dimOrder = new Map(((S.ds.dimensions.find((d) => d.key === skMode) || {}).values || []).map((v, i) => [v.value, i]));
     const nodeCmp = (a, b) => {
       if (a.col !== b.col) return 0;
       let c;
-      if (skMode === "name") c = String(a.label).localeCompare(String(b.label), "es");
-      else if (skMode === "time") {
+      if (skMode === "value") c = isTime(a.col) ? Dataset.timeValue(a.label) - Dataset.timeValue(b.label) // fechas cronológicas
+        : b.value - a.value;                                                                              // mayor primero
+      else if (skMode === "name") c = String(a.label).localeCompare(String(b.label), "es");
+      else if (isTime(skMode)) {
         const ta = Dataset.timeValue(a.label), tb = Dataset.timeValue(b.label);
         c = ta !== tb ? ta - tb : String(a.label).localeCompare(String(b.label), "es");
       }
-      else if (skMode === "group") {
+      else {
+        // orden propio de la variable (el mismo que usa la leyenda)
         const ia = dimOrder.has(a.label) ? dimOrder.get(a.label) : 1e6;
         const ib = dimOrder.has(b.label) ? dimOrder.get(b.label) : 1e6;
         c = ia - ib || String(a.label).localeCompare(String(b.label), "es");
       }
-      else if (isTime(a.col)) c = Dataset.timeValue(a.label) - Dataset.timeValue(b.label); // «valor»: fechas cronológicas
-      else c = b.value - a.value;                                                          // «valor»: mayor primero
       return reverse ? -c : c;
     };
 
@@ -278,9 +297,12 @@
       .nodeSort(nodeCmp)
       .extent([[MARGIN, TOP], [W - MARGIN, h - BOTTOM]])({ nodes: [...nodes.values()], links: [...links.values()] });
 
-    // Reparte las etiquetas de cada columna de arriba abajo y las mantiene dentro del marco.
+    // Reparte las etiquetas de cada columna desde su nodo, de arriba abajo, y mantiene los dos
+    // bordes de la columna dentro del marco. d3 fija el primer y el último nodo a los bordes, así
+    // que una etiqueta más alta que su nodo siempre sobresale: primero se recortan los huecos
+    // sobrantes entre etiquetas y solo lo que no quepa se devuelve para agrandar el gráfico.
     const placeLabels = (graph) => {
-      let topOver = 0, bottomOver = 0;
+      let need = 0;
       cols.forEach((c) => {
         const arr = graph.nodes.filter((n) => n.col === c)
           .map((n) => ({ n, center: (n.y0 + n.y1) / 2 }))
@@ -292,14 +314,21 @@
           if (top < prevBottom + LABEL_GAP) top = prevBottom + LABEL_GAP;
           it.n.__labelTop = top; prevBottom = top + it.n.__blockHeight;
         });
-        topOver = Math.max(topOver, TOP - arr[0].n.__labelTop);
-        bottomOver = Math.max(bottomOver, prevBottom - (H - BOTTOM));
-        let shift = arr[0].n.__labelTop < TOP ? TOP - arr[0].n.__labelTop : 0;
-        const over = prevBottom + shift - (H - BOTTOM);
-        if (over > 0) shift -= over;
-        if (shift) arr.forEach((it) => { it.n.__labelTop += shift; });
+        let over = prevBottom - (H - BOTTOM);
+        if (over > 0) {
+          const gaps = arr.slice(1).map((it, i) => Math.max(0, it.n.__labelTop - arr[i].n.__labelTop - arr[i].n.__blockHeight - LABEL_GAP));
+          const room = gaps.reduce((a, b) => a + b, 0), f = room > 0 ? Math.min(1, over / room) : 0;
+          let acc = 0;
+          arr.forEach((it, i) => { if (i) { acc += gaps[i - 1] * f; it.n.__labelTop -= acc; } });
+          prevBottom -= acc; over -= acc;
+        }
+        // Si aún sobresale, la pila se mueve entera sin cruzar TOP.
+        const shift = arr[0].n.__labelTop < TOP ? TOP - arr[0].n.__labelTop : 0;
+        const s = shift - Math.min(over, arr[0].n.__labelTop + shift - TOP);
+        if (s) arr.forEach((it) => { it.n.__labelTop += s; });
+        need = Math.max(need, prevBottom + s - (H - BOTTOM));
       });
-      return Math.max(0, topOver) + Math.max(0, bottomOver);
+      return Math.max(0, need);
     };
 
     // Si un bloque centrado en un nodo bajo aún sobresale, crece y vuelve a maquetar.
@@ -307,7 +336,7 @@
     for (let pass = 0; ; pass++) {
       g = layout(H);
       const overflow = placeLabels(g);
-      if (overflow < 1 || pass >= 3) break;
+      if (overflow < 1 || pass >= 5) break;
       H += overflow + 1;
     }
 
@@ -337,16 +366,6 @@
     ng.append("rect").attr("x", (d) => d.x0).attr("y", (d) => d.y0).attr("width", (d) => d.x1 - d.x0)
       .attr("height", (d) => Math.max(2, d.y1 - d.y0)).attr("fill", (d) => (d.col === ck ? color(d.label) : NEUTRAL));
 
-    // línea guía: solo cuando la etiqueta tuvo que desplazarse para no solaparse
-    ng.each(function (d) {
-      const nodeCenter = (d.y0 + d.y1) / 2, labelCenter = d.__labelTop + d.__blockHeight / 2;
-      if (Math.abs(labelCenter - nodeCenter) <= 2) return;
-      const labelX = d.__anchor === "end" ? d.x0 - 6 : d.x1 + 6;
-      d3.select(this).insert("line", "text").attr("class", "lbl-lead")
-        .attr("x1", d.__anchor === "end" ? d.x0 - 3 : d.x1 + 3).attr("y1", nodeCenter)
-        .attr("x2", d.__anchor === "end" ? labelX + 3 : labelX - 3).attr("y2", labelCenter);
-    });
-
     const txt = ng.append("text").attr("class", "lbl").attr("text-anchor", (d) => d.__anchor);
     txt.each(function (d) {
       const sel = d3.select(this), labelX = d.__anchor === "end" ? d.x0 - 6 : d.x1 + 6;
@@ -370,24 +389,56 @@
   }
 
   /* ---------- Timeline ---------- */
-  let gOrd = () => 0;
+  const TL_FIXED = ["start", "end", "length", "name"];
+  let gOrd = () => 0, gVal = () => "";
   const gKey = (it) => vals(it, S.colorKey)[0];
   function tlCmp(a, b) {
     const L = (i) => i.__life, st = (i) => L(i).birth ?? L(i).activeStart, nm = (i) => String(i.name || i.id), m = S.tlSort || "start";
     const c = m === "end" ? L(a).activeEnd - L(b).activeEnd : m === "length" ? L(a).activeYears - L(b).activeYears
-      : m === "name" ? nm(a).localeCompare(nm(b), "es") : m === "group" ? gOrd(a) - gOrd(b) : 0;
+      : m === "name" ? nm(a).localeCompare(nm(b), "es") : TL_FIXED.includes(m) ? 0 : gOrd(a) - gOrd(b);
     return c || st(a) - st(b) || nm(a).localeCompare(nm(b), "es");
   }
+  // «Orden» de la timeline: nombre + variables activas (columnas o color) + variables temporales.
+  function tlSortOpts() {
+    const active = [], temp = [], has = (l, k) => l.some((x) => x.key === k);
+    [...S.cols.filter(Boolean), S.colorKey].forEach((k) => {
+      const d = k && k !== "name" ? S.ds.dimensions.find((x) => x.key === k) : null;
+      if (d && !has(active, d.key) && !has(temp, d.key)) active.push(d);
+    });
+    S.ds.dimensions.filter((d) => d.derived).forEach((d) => {
+      if (!has(active, d.key) && !has(temp, d.key)) temp.push(d);
+    });
+    const opts = [
+      { key: "name", label: "nombre" },
+      ...active.map((d) => ({ key: d.key, label: d.label })),
+      { key: "start", label: "inicio" }, { key: "end", label: "fin" }, { key: "length", label: "duración" },
+      ...temp.map((d) => ({ key: d.key, label: d.label })),
+    ];
+    if (!opts.some((o) => o.key === S.tlSort)) S.tlSort = "start";
+    const sel = $("tl-sort");
+    if (sel) {
+      const sig = opts.map((o) => o.key).join("|");
+      if (sel.dataset.sig !== sig) {
+        sel.innerHTML = opts.map((o) => `<option value="${esc(o.key)}">${esc(o.label)}</option>`).join("");
+        sel.dataset.sig = sig;
+      }
+      if (sel.value !== S.tlSort) sel.value = S.tlSort;
+    }
+    return opts;
+  }
   function renderTimeline(animate) {
+    tlSortOpts();
     const host = d3.select("#timeline"), prev = new Map();
     host.selectAll(".tl-row").each(function (d) { prev.set(d.id, this.__y); });
     host.selectAll("*").remove();
     const rows = S.ds.items.filter((i) => i.__life.valid);
     if (!rows.length) { host.append("p").attr("class", "empty").text("Sin ítems con fechas válidas."); return; }
-    const dim = S.ds.dimensions.find((x) => x.key === S.colorKey), ord = new Map((dim ? dim.values : []).map((v, i) => [v.value, i]));
-    gOrd = (it) => (ord.has(gKey(it)) ? ord.get(gKey(it)) : 1e6);
+    const dimKey = TL_FIXED.includes(S.tlSort) ? null : S.tlSort;
+    const dim = S.ds.dimensions.find((x) => x.key === dimKey), ord = new Map((dim ? dim.values : []).map((v, i) => [v.value, i]));
+    gVal = (it) => vals(it, dimKey)[0];
+    gOrd = (it) => (ord.has(gVal(it)) ? ord.get(gVal(it)) : 1e6);
     rows.sort(tlCmp); if (S.tlDesc) rows.reverse();
-    const grouped = S.tlSort === "group", RH = 16, T = 30, LW = 200, W = 1100, GAP = 22;
+    const grouped = S.tlSort === S.colorKey && S.tlSort !== "name", RH = 16, T = 30, LW = 200, W = 1100, GAP = 22;
     const yOf = new Map(), heads = []; let y = T, last;
     rows.forEach((it) => {
       if (grouped && gKey(it) !== last) { last = gKey(it); heads.push({ y, label: last }); y += GAP; }
