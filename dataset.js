@@ -11,7 +11,7 @@
     COHORT_SIZE: 50,
     MULTI_SEP: "|",
     MIN_UNIQUE: 2,
-    MAX_UNIQUE: 40,
+    MAX_UNIQUE: 100,
     MAX_AVG_LEN: 45,
     MIN_COVERAGE: 0.5,
   };
