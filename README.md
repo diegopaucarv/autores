@@ -5,6 +5,8 @@ Visor estático de autores: lee `.csv` y `.json` de `data/` y dibuja un
 editable. HTML + JavaScript sin compilación ni dependencias instaladas (D3 se
 carga por CDN).
 
+![Sankey de autores: continente, género y corriente](docs/sankey.png)
+
 ## Estructura
 
 | Archivo              | Responsabilidad                                                       |
