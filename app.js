@@ -73,6 +73,8 @@
 
   const S = { ds: null, cols: [], colorKey: null, file: "" };
   let pinnedIds = null; // Holds the currently clicked/sticky selection
+  let hiddenIds = new Set(); // Autores ocultos en la línea de tiempo
+  let dateMin = null, dateMax = null; // Rango de fechas de la línea de tiempo
 
   /* ---------- carga ---------- */
   function boot(text, name) {
@@ -81,6 +83,9 @@
     S.file = name;
     const ds = Panel.onLoad(Dataset.load(text, { file: name }), name);
     S.ds = ds;
+    hiddenIds.clear(); dateMin = dateMax = null;
+    $("tl-min").value = $("tl-max").value = ""; $("tl-dates-clear").hidden = true;
+    updateHiddenMsg();
     $("add-author").disabled = false;
     renderReport(ds);
     if (!ds.items.length) { ["selectors", "legend", "sankey", "timeline"].forEach((i) => ($(i).innerHTML = "")); return; }
@@ -615,6 +620,14 @@
     }
     return opts;
   }
+  // Mensaje «n ocultos · Mostrar» del encabezado de la línea de tiempo.
+  function updateHiddenMsg() {
+    const btn = $("tl-hidden"); if (!btn) return;
+    const live = new Set(S.ds ? S.ds.items.map((i) => i.id) : []);
+    const n = [...hiddenIds].filter((id) => live.has(id)).length;
+    btn.hidden = !n;
+    btn.textContent = n === 1 ? "1 oculto · Mostrar" : `${n} ocultos · Mostrar`;
+  }
   function renderTimeline(animate) {
     tlSortOpts();
     const host = d3.select("#timeline"), prev = new Map();
@@ -624,8 +637,27 @@
     // panel vacío que encoja la página y haga saltar el scroll.
     const hostEl = host.node(), CW = hostEl && hostEl.clientWidth;
     host.selectAll("*").remove();
-    const rows = S.ds.items.filter((i) => i.__life.valid);
-    if (!rows.length) { host.append("p").attr("class", "empty").text("Sin ítems con fechas válidas."); return; }
+    // Filtros: autores ocultos y rango de fechas. El rango se normaliza por si el
+    // usuario escribe el máximo antes que el mínimo.
+    const lo = dateMin != null && dateMax != null ? Math.min(dateMin, dateMax) : dateMin;
+    const hi = dateMin != null && dateMax != null ? Math.max(dateMin, dateMax) : dateMax;
+    const valid = S.ds.items.filter((i) => i.__life.valid);
+    const inRange = (i) => {
+      if (lo == null && hi == null) return true;
+      const L = i.__life, a = L.birth ?? L.activeStart;
+      return L.activeEnd >= (lo ?? -Infinity) && a <= (hi ?? Infinity);
+    };
+    const rows = valid.filter((i) => !hiddenIds.has(i.id) && inRange(i));
+    if (!rows.length) {
+      // Si hay autores pero están ocultos, se ofrece el mensaje para recuperarlos.
+      const someVisible = valid.some((i) => !hiddenIds.has(i.id));
+      host.append("p").attr("class", "empty").text(
+        !valid.length ? "Sin ítems con fechas válidas."
+          : someVisible ? "Ningún autor en ese rango de fechas."
+            : "Todos los autores están ocultos.");
+      updateHiddenMsg();
+      return;
+    }
     const dimKey = TL_FIXED.includes(S.tlSort) ? null : S.tlSort;
     const dim = S.ds.dimensions.find((x) => x.key === dimKey), ord = new Map((dim ? dim.values : []).map((v, i) => [v.value, i]));
     gVal = (it) => vals(it, dimKey)[0];
@@ -634,7 +666,7 @@
     const W = Math.max(CHART_MIN, Math.min(CHART_MAX, CW || 1100));
     const grouped = S.tlSort === S.colorKey && S.tlSort !== "name", RH = 16, T = 30,
       // La columna de etiquetas es fija: se le da ancho suficiente para que los nombres
-      // truncados a 30 caracteres se lean enteros.
+      // se lean enteros (truncados por medida, no por número de caracteres).
       LW = Math.min(210, Math.max(170, Math.round(W * 0.18))), GAP = 22;
     const yOf = new Map(), heads = []; let y = T, last;
     rows.forEach((it) => {
@@ -644,7 +676,21 @@
     const H = y + 6, start = (i) => i.__life.birth ?? i.__life.activeStart;
     // La columna de etiquetas queda fija y sólo el área del gráfico se desplaza en horizontal.
     const PW = Math.max(420, W - LW);
-    const x = d3.scaleLinear().domain([d3.min(rows, start), CY]).nice().range([26, PW - 12]);
+    // El eje se ajusta al rango de fechas cuando hay filtro; si no, abarca la vida
+    // de los autores visibles hasta hoy. Lo dibujado se recorta a lo visible.
+    let d0 = lo ?? d3.min(rows, start), d1 = hi ?? CY;
+    if (d1 <= d0) d1 = d0 + 1;
+    const x = d3.scaleLinear().domain([d0, d1]);
+    if (lo == null && hi == null) x.nice();
+    x.range([26, PW - 12]);
+    const x0 = x.domain()[0], x1 = x.domain()[1];
+    const cl = (v) => Math.max(x0, Math.min(x1, v));
+    const bx = (v) => x(cl(v));
+    const barW = (d) => {
+      const L = d.__life;
+      if (L.activeEnd < x0 || L.activeStart > x1) return 0;
+      return Math.max(2, bx(L.activeEnd) - bx(L.activeStart));
+    };
     const wrap = host.append("div").attr("class", "tl-wrap");
     const lab = wrap.append("div").attr("class", "tl-labels").style("width", `${LW}px`);
     const pl = wrap.append("div").attr("class", "tl-plot");
@@ -665,21 +711,32 @@
     const rl = wire(svgL.append("g").selectAll("g").data(rows, (d) => d.id).join("g").attr("class", "tl-row")
       .each(function (d) { this.__y = yOf.get(d.id); })
       .attr("transform", (d) => `translate(0,${yOf.get(d.id)})`));
-    rl.append("text").attr("x", LW - 8).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "end").attr("class", "lbl")
-      .text((d) => (d.name || d.id).slice(0, 30));
+    rl.append("text").attr("x", LW - 24).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "end").attr("class", "lbl")
+      .text((d) => fitText(d.name || d.id, LW - 34));
+    // Ocultar: una casilla al final de cada fila. Al ocultar se recalcula el layout
+    // sólo con los autores visibles y el encabezado ofrece restaurarlos.
+    const hb = rl.append("g").attr("class", "tl-hide")
+      .attr("transform", `translate(${LW - 18},${RH / 2})`)
+      .attr("role", "button").attr("tabindex", 0)
+      .attr("aria-label", (d) => "Ocultar " + (d.name || d.id));
+    hb.append("rect").attr("x", -5).attr("y", -5).attr("width", 10).attr("height", 10).attr("rx", 2);
+    hb.append("path").attr("d", "M-3 0l2 2 4-4");
+    const hideRow = (ev, d) => { ev.preventDefault(); ev.stopPropagation(); Panel.tipHide(); hiddenIds.add(d.id); renderTimeline(true); };
+    hb.on("click", hideRow).on("keydown", (ev, d) => { if (ev.key === "Enter" || ev.key === " ") hideRow(ev, d); });
     const rp = wire(svgP.append("g").selectAll("g").data(rows, (d) => d.id).join("g").attr("class", "tl-row")
       .each(function (d) { this.__y = yOf.get(d.id); })
       .attr("transform", (d) => `translate(0,${yOf.get(d.id)})`));
-    rp.append("line").attr("x1", (d) => x(start(d))).attr("x2", (d) => x(d.__life.activeEnd)).attr("y1", RH / 2).attr("y2", RH / 2)
+    rp.append("line").attr("x1", (d) => bx(start(d))).attr("x2", (d) => bx(d.__life.activeEnd)).attr("y1", RH / 2).attr("y2", RH / 2)
       .attr("stroke", col).attr("stroke-width", 1.5).attr("stroke-opacity", (d) => (d.__life.mode === "life" ? 0.6 : 0));
-    rp.append("rect").attr("x", (d) => x(d.__life.activeStart)).attr("y", 3).attr("height", RH - 6).attr("rx", 2)
-      .attr("width", (d) => Math.max(2, x(d.__life.activeEnd) - x(d.__life.activeStart)))
+    rp.append("rect").attr("x", (d) => bx(d.__life.activeStart)).attr("y", 3).attr("height", RH - 6).attr("rx", 2)
+      .attr("width", barW)
       .attr("fill", col).attr("fill-opacity", (d) => (d.__life.alive ? 0.5 : 0.9))
       .attr("stroke", col).attr("stroke-dasharray", (d) => (d.__life.alive ? "4 2" : null));
     if (animate && prev.size && !matchMedia("(prefers-reduced-motion: reduce)").matches)
       [rl, rp].forEach((sel) => sel.attr("transform", (d) => `translate(0,${prev.has(d.id) ? prev.get(d.id) : yOf.get(d.id)})`)
         .transition().duration(500).attr("transform", (d) => `translate(0,${yOf.get(d.id)})`));
     if (prevScroll) pl.node().scrollLeft = prevScroll;
+    updateHiddenMsg();
     paint();
   }
 
@@ -703,6 +760,8 @@
   function back() { if (VH.length < 2) return; VH.pop(); applyView(VH[VH.length - 1]); }
   function resetView() {
     if (!S.ds || !S.ds.items.length) return;
+    hiddenIds.clear(); dateMin = dateMax = null;
+    $("tl-min").value = $("tl-max").value = ""; $("tl-dates-clear").hidden = true;
     const d = S.ds.defaults.length >= 2 ? S.ds.defaults : S.ds.dimensions.slice(0, 3).map((x) => x.key);
     const cols = [d[0], d[1], d[2] || null].filter((x, i) => x || i < 2);
     applyView(JSON.stringify({ cols, colorKey: cols[0] || null, tlSort: "start", tlDesc: false, skSort: "value", skDesc: false, cohort: 50 }));
@@ -724,7 +783,7 @@
 
     // Clear pinned elements when clicking on the background
     document.addEventListener("click", (e) => {
-       if (e.target.closest && e.target.closest("#detail,.top,.panel-head,.legend,#report")) return;
+       if (e.target.closest && e.target.closest("#detail,.top,.panel-head,.legend,#report,#help,#help-backdrop")) return;
        if (pinnedIds) { highlight(null, true); Panel.close(); }
     });
     $("tl-sort").addEventListener("change", (e) => { S.tlSort = e.target.value; renderTimeline(true); });
@@ -772,6 +831,46 @@
     S.api.reloadFile = () => { if (S.file) fsCtl.select(S.file); };
 
     $("add-author").onclick = () => Panel.addAuthor();
+
+    /* ---------- línea de tiempo: rango de fechas y autores ocultos ---------- */
+    const readDates = () => {
+      const els = [$("tl-min"), $("tl-max")];
+      let a = parseInt(els[0].value, 10), b = parseInt(els[1].value, 10);
+      if (Number.isFinite(a) && Number.isFinite(b) && a > b) {
+        [a, b] = [b, a];
+        els[0].value = a; els[1].value = b;
+      }
+      dateMin = Number.isFinite(a) ? a : null;
+      dateMax = Number.isFinite(b) ? b : null;
+      $("tl-dates-clear").hidden = dateMin == null && dateMax == null;
+      renderTimeline(true);
+    };
+    $("tl-min").addEventListener("change", readDates);
+    $("tl-max").addEventListener("change", readDates);
+    $("tl-dates-clear").onclick = () => {
+      $("tl-min").value = $("tl-max").value = "";
+      dateMin = dateMax = null; $("tl-dates-clear").hidden = true;
+      renderTimeline(true);
+    };
+    $("tl-hidden").onclick = () => { hiddenIds.clear(); renderTimeline(true); };
+
+    /* ---------- ayuda ---------- */
+    const help = $("help"), helpBd = $("help-backdrop");
+    const helpOpen = () => {
+      help.classList.add("open"); help.setAttribute("aria-hidden", "false");
+      helpBd.classList.add("open"); help.querySelector(".hbody").scrollTop = 0;
+      $("help-close").focus({ preventScroll: true });
+    };
+    const helpClose = () => {
+      help.classList.remove("open"); help.setAttribute("aria-hidden", "true");
+      helpBd.classList.remove("open");
+    };
+    $("help-btn").onclick = helpOpen;
+    $("help-close").onclick = helpClose;
+    helpBd.onclick = helpClose;
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && help.classList.contains("open")) { e.preventDefault(); helpClose(); }
+    });
 
     // Los gráficos usan el ancho real del contenedor: si la ventana cambia de tamaño (o el móvil
     // gira), se vuelven a maquetar para que las etiquetas se reajusten en vez de quedar desfasadas.

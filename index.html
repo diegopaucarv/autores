@@ -152,6 +152,7 @@
             button,
             select,
             input[type="search"],
+            input[type="number"],
             textarea,
             #detail input {
                 font: inherit;
@@ -292,11 +293,26 @@
                 margin: 0;
                 font: var(--w2) var(--t4)/1.2 var(--serif);
             }
-            .brand p {
-                margin: var(--s1) 0 0;
-                color: var(--ink-3);
+            .brand .help-link {
+                margin-top: var(--s1);
+                padding: 0;
+                min-height: 0;
+                border: 0;
+                border-radius: 0;
+                background: none;
+                color: var(--accent);
                 font-size: var(--t1);
-                max-width: 60ch;
+                font-weight: var(--w2);
+                gap: var(--s1);
+            }
+            .brand .help-link:hover:not(:disabled) {
+                background: none;
+                color: var(--accent);
+                text-decoration: underline;
+            }
+            .brand .help-link .ic {
+                width: 14px;
+                height: 14px;
             }
             .top-tools {
                 display: flex;
@@ -524,6 +540,45 @@
                    vertical (no puede desplazarse en Y) y la página deja de bajar. */
                 overscroll-behavior-x: contain;
                 scrollbar-color: var(--rule) transparent;
+            }
+            /* Casilla para ocultar un autor, al final de su fila en la columna fija. */
+            .tl-hide {
+                cursor: pointer;
+                outline: none;
+            }
+            .tl-hide rect {
+                fill: none;
+                stroke: var(--ink-3);
+                stroke-width: 1.2;
+            }
+            .tl-hide path {
+                fill: none;
+                stroke: var(--ink-3);
+                stroke-width: 1.7;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+            .tl-hide:hover rect,
+            .tl-hide:hover path,
+            .tl-hide:focus-visible rect,
+            .tl-hide:focus-visible path {
+                stroke: var(--accent);
+            }
+            .tl-hide:focus-visible rect {
+                stroke-width: 2;
+            }
+            /* Filtro de fechas: dos años y un botón para limpiarlos. */
+            .panel-head > .tl-dates {
+                flex: 0 1 auto;
+                max-width: none;
+            }
+            .tl-dates input[type="number"] {
+                width: 9ch;
+            }
+            #tl-hidden {
+                border-color: var(--accent);
+                color: var(--accent);
+                background: var(--accent-wash);
             }
             .empty {
                 margin: 0;
@@ -789,7 +844,8 @@
             }
 
             /* ===== 7. Ficha lateral ===== */
-            #detail-backdrop {
+            #detail-backdrop,
+            #help-backdrop {
                 position: fixed;
                 inset: 0;
                 z-index: 49;
@@ -798,7 +854,8 @@
                 pointer-events: none;
                 transition: opacity 0.2s;
             }
-            #detail-backdrop.open {
+            #detail-backdrop.open,
+            #help-backdrop.open {
                 opacity: 1;
                 pointer-events: auto;
             }
@@ -914,6 +971,96 @@
                 font-weight: var(--w1) !important;
             }
 
+            /* ===== 7b. Ayuda ===== */
+            #help-backdrop {
+                z-index: 59;
+            }
+            #help {
+                position: fixed;
+                inset: 0;
+                z-index: 60;
+                margin: auto;
+                width: min(680px, calc(100vw - 2 * var(--s4)));
+                max-height: min(86dvh, 860px);
+                display: flex;
+                flex-direction: column;
+                background: var(--surface);
+                border: 1px solid var(--rule);
+                border-radius: var(--sheet-radius);
+                box-shadow: var(--pop);
+                opacity: 0;
+                visibility: hidden;
+                transform: translateY(10px);
+                transition:
+                    opacity 0.18s,
+                    transform 0.18s,
+                    visibility 0.18s;
+            }
+            #help.open {
+                opacity: 1;
+                visibility: visible;
+                transform: none;
+            }
+            #help .hhead {
+                display: flex;
+                align-items: center;
+                gap: var(--s3);
+                padding: var(--s3) var(--s5);
+                border-bottom: 1px solid var(--rule-soft);
+            }
+            #help .hhead h2 {
+                margin: 0;
+                font: var(--w2) var(--t3)/1.3 var(--serif);
+            }
+            #help .hhead .spacer {
+                flex: 1;
+            }
+            #help .hbody {
+                overflow: auto;
+                overscroll-behavior: contain;
+                padding: var(--s3) var(--s5) var(--s5);
+            }
+            #help h3 {
+                margin: var(--s4) 0 var(--s1);
+                font-size: var(--t1);
+                font-weight: var(--w2);
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                color: var(--ink-2);
+            }
+            #help h3:first-child {
+                margin-top: 0;
+            }
+            #help p {
+                margin: 0 0 var(--s2);
+            }
+            #help ul,
+            #help ol {
+                margin: 0 0 var(--s2);
+                padding-left: var(--s5);
+            }
+            #help li {
+                margin-bottom: var(--s1);
+            }
+            .help-t {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 0 0 var(--s2);
+                font-size: var(--t1);
+            }
+            .help-t th,
+            .help-t td {
+                text-align: left;
+                vertical-align: top;
+                padding: var(--s1) var(--s2);
+                border-bottom: 1px solid var(--rule-soft);
+            }
+            .help-t th {
+                color: var(--ink-2);
+                font-weight: var(--w2);
+                white-space: nowrap;
+            }
+
             /* ===== 8. Tooltip ===== */
             #tip {
                 position: fixed;
@@ -964,10 +1111,6 @@
                 }
                 .top-tools .menu > summary {
                     justify-content: space-between;
-                }
-                .brand p {
-                    max-width: none;
-                    overflow-wrap: anywhere;
                 }
                 .divider {
                     display: none;
@@ -1046,6 +1189,19 @@
                 }
                 #detail .row2 .fld {
                     width: 100%;
+                }
+                /* La ayuda se convierte en hoja inferior, como la ficha. */
+                #help {
+                    inset: auto 0 0 0;
+                    margin: 0;
+                    width: 100vw;
+                    max-height: 92dvh;
+                    border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+                }
+                #help .hhead,
+                #help .hbody {
+                    padding-left: var(--gutter);
+                    padding-right: var(--gutter);
                 }
             }
             @media (max-width: 480px) {
@@ -1141,15 +1297,34 @@
                         d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
                     />
                 </symbol>
+                <symbol id="i-help" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" />
+                    <path
+                        d="M9.2 9.3a2.9 2.9 0 0 1 5.6 1c0 1.9-2.8 2.1-2.8 4"
+                    />
+                    <circle
+                        cx="12"
+                        cy="17.2"
+                        r="1"
+                        fill="currentColor"
+                        stroke="none"
+                    />
+                </symbol>
             </defs>
         </svg>
         <header class="top">
             <div class="brand">
                 <h1>Explorador de autores</h1>
-                <p>
-                    Lee <b>.csv</b> y <b>.json</b> de <code>data/</code>. Clic
-                    en una etiqueta abre la ficha; clic en una forma filtra.
-                </p>
+                <button
+                    id="help-btn"
+                    type="button"
+                    class="help-link"
+                    title="Cómo usar la aplicación"
+                >
+                    <svg class="ic" aria-hidden="true">
+                        <use href="#i-help" /></svg
+                    ><span>¿Cómo funciona?</span>
+                </button>
             </div>
             <div class="top-tools">
                 <div id="fs"></div>
@@ -1360,6 +1535,43 @@
                             <svg class="ic"><use href="#i-up" /></svg>
                         </button>
                     </div>
+                    <div class="cfg-row tl-dates">
+                        <label class="cfg-label" for="tl-min">Fechas</label>
+                        <input
+                            type="number"
+                            id="tl-min"
+                            step="1"
+                            inputmode="numeric"
+                            placeholder="desde"
+                            aria-label="Año mínimo"
+                        />
+                        <span class="muted" aria-hidden="true">–</span>
+                        <input
+                            type="number"
+                            id="tl-max"
+                            step="1"
+                            inputmode="numeric"
+                            placeholder="hasta"
+                            aria-label="Año máximo"
+                        />
+                        <button
+                            id="tl-dates-clear"
+                            class="icon mini"
+                            type="button"
+                            title="Limpiar fechas"
+                            aria-label="Limpiar fechas"
+                            hidden
+                        >
+                            <svg class="ic"><use href="#i-close" /></svg>
+                        </button>
+                    </div>
+                    <button
+                        id="tl-hidden"
+                        class="mini"
+                        type="button"
+                        title="Mostrar de nuevo todos los autores ocultos"
+                        hidden
+                    ></button>
                     <span class="muted spacer"
                         >Línea fina: vida · barra: años activos · discontinua:
                         sigue vivo/activo</span
@@ -1370,6 +1582,164 @@
         </main>
 
         <div id="detail-backdrop" aria-hidden="true"></div>
+        <div id="help-backdrop" aria-hidden="true"></div>
+        <div
+            id="help"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="help-title"
+            aria-hidden="true"
+        >
+            <div class="hhead">
+                <h2 id="help-title">¿Cómo funciona?</h2>
+                <span class="spacer"></span>
+                <button
+                    id="help-close"
+                    type="button"
+                    class="icon"
+                    title="Cerrar (Esc)"
+                    aria-label="Cerrar ayuda"
+                >
+                    <svg class="ic"><use href="#i-close" /></svg>
+                </button>
+            </div>
+            <div class="hbody">
+                <h3>Qué es</h3>
+                <p>
+                    Un visor estático (HTML + JavaScript, sin compilación) que
+                    lee <b>.csv</b> y <b>.json</b> y dibuja dos vistas: un
+                    <b>Sankey</b> de dimensiones y una <b>línea de tiempo</b>.
+                </p>
+
+                <h3>Añadir datos</h3>
+                <ol>
+                    <li>Copia el archivo en <code>data/</code>.</li>
+                    <li>
+                        Añade su nombre a <code>data/manifest.json</code> (una
+                        lista <code>["a.csv"]</code> o
+                        <code>{"files": […]}</code>).
+                    </li>
+                    <li>
+                        Pulsa <b>Recargar lista</b> junto al selector de dataset
+                        y elige el archivo.
+                    </li>
+                </ol>
+                <p>
+                    También puedes cargar archivos sueltos con
+                    <b>Carpeta…</b> o <b>Archivo…</b>. Abierto con
+                    <code>file://</code> no se puede listar <code>data/</code>;
+                    en ese caso usa esos botones (o un
+                    <code>data.js</code> opcional con
+                    <code>window.DEFAULT_DATA</code>).
+                </p>
+
+                <h3>Columnas del CSV</h3>
+                <p>
+                    Una fila por autor. El separador (<code>,</code>
+                    <code>;</code> o tabulador) se detecta solo, y los campos
+                    entrecomillados pueden contener saltos de línea.
+                </p>
+                <table class="help-t">
+                    <tr>
+                        <th>Campo</th>
+                        <th>Nombres aceptados</th>
+                    </tr>
+                    <tr>
+                        <td><b>Nombre</b> (obligatorio)</td>
+                        <td>
+                            <code>nombre</code>, <code>autor</code>,
+                            <code>author</code>, <code>title</code>,
+                            <code>label</code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Nacimiento</td>
+                        <td>
+                            <code>nacimiento</code>, <code>birth</code>,
+                            <code>born</code>, <code>birth_year</code>…
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Muerte</td>
+                        <td>
+                            <code>muerte</code>, <code>death</code>,
+                            <code>died</code>, <code>death_year</code>…
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Intervalo</td>
+                        <td>
+                            <code>vida</code>, <code>years</code>,
+                            <code>años</code>, <code>años_actividad</code>,
+                            <code>active</code>, <code>period</code>…
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Dimensiones</td>
+                        <td>
+                            Cualquier otra columna con valores repetidos: país,
+                            corriente, género…
+                        </td>
+                    </tr>
+                </table>
+                <p>
+                    Fechas: <code>-350</code> o <code>350 a.C.</code> para antes
+                    de Cristo; <code>?</code>, <code>c.</code> o
+                    <code>ca.</code> para una fecha aproximada;
+                    <code>present</code> o <code>actualidad</code> para alguien
+                    vivo. Varios valores en una celda se separan con
+                    <code>|</code>; una celda vacía cuenta como
+                    <code>(vacío)</code>.
+                </p>
+
+                <h3>Diagramas</h3>
+                <p>
+                    <b>Sankey.</b> Cada columna es una dimensión y el grosor de
+                    cada nodo es el número de autores. Clic en una forma filtra
+                    (fija la selección); clic en una etiqueta abre la ficha. La
+                    leyenda de categorías va en orden alfabético y un clic
+                    filtra. <b>Ajustes</b> cambia columnas, color, orden,
+                    cohorte y texto en los nodos. Si el gráfico es más ancho que
+                    la ventana, se desplaza en horizontal.
+                </p>
+                <p>
+                    <b>Línea de tiempo.</b> Línea fina: vida; barra: años
+                    activos; discontinua: sigue vivo o activo. La columna de
+                    nombres queda fija y solo el área del gráfico se desplaza en
+                    horizontal. <b>Orden</b> agrupa por el campo elegido. La
+                    casilla al final de cada fila oculta al autor y el aviso «n
+                    ocultos · Mostrar» los recupera; los campos <b>Fechas</b>
+                    limitan el periodo visible.
+                </p>
+
+                <h3>Ficha</h3>
+                <p>
+                    Se abre al pulsar una etiqueta o un resultado de búsqueda.
+                    Permite editar campos, añadir y borrar autores, deshacer y
+                    rehacer, y exportar los datos en CSV o JSON.
+                    <b>Notas (.meta.json)</b> guarda descripciones y cambios;
+                    <b>Importar notas…</b> los recupera. Los cambios también
+                    quedan guardados en este navegador.
+                </p>
+
+                <h3>Atajos</h3>
+                <ul>
+                    <li>
+                        <kbd>/</kbd> enfoca la búsqueda; <kbd>Esc</kbd> la
+                        limpia o cierra la ficha.
+                    </li>
+                    <li>
+                        <kbd>Alt</kbd>+<kbd>←</kbd> vuelve a la vista anterior.
+                    </li>
+                    <li>
+                        <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd
+                            >Y</kbd
+                        >
+                        deshacer y rehacer.
+                    </li>
+                </ul>
+            </div>
+        </div>
         <aside
             id="detail"
             role="dialog"
