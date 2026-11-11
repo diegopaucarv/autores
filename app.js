@@ -73,18 +73,21 @@
 
   const S = { ds: null, cols: [], colorKey: null, file: "" };
   let pinnedIds = null; // Holds the currently clicked/sticky selection
+  let filterIds = null; // Subconjunto fijado que además filtra la línea de tiempo
   let hiddenIds = new Set(); // Autores ocultos en la línea de tiempo
   let dateMin = null, dateMax = null; // Rango de fechas de la línea de tiempo
+  let dateLo = null, dateHi = null; // Extremos del deslizador de fechas
 
   /* ---------- carga ---------- */
   function boot(text, name) {
 
     pinnedIds = null;
+    filterIds = null;
     S.file = name;
     const ds = Panel.onLoad(Dataset.load(text, { file: name }), name);
     S.ds = ds;
-    hiddenIds.clear(); dateMin = dateMax = null;
-    $("tl-min").value = $("tl-max").value = ""; $("tl-dates-clear").hidden = true;
+    hiddenIds.clear();
+    resetDates();
     updateHiddenMsg();
     $("add-author").disabled = false;
     renderReport(ds);
@@ -164,6 +167,7 @@
   function renderAll() { renderLegend(); renderSankey(); renderTimeline(); paint(); }
   function reanalyze() {
     S.ds = Dataset.analyze(S.ds.items, { currentYear: CY, file: S.file, format: S.ds.report.format, delimiter: S.ds.report.delimiter });
+    syncDates();
     const keys = S.ds.dimensions.map((d) => d.key);
     S.cols = S.cols.filter((c, i) => keys.includes(c) || (!c && i >= 2));
     if (S.cols.length < 2) { const d = S.ds.defaults.length >= 2 ? S.ds.defaults : keys.slice(0, 3); S.cols = [d[0], d[1], d[2] || null].filter((x, i) => x || i < 2); }
@@ -182,7 +186,7 @@
       const s = document.createElement("span"); s.innerHTML = `<i style="background:${color(value)}"></i>`; s.append(value);
       s.style.cursor = "pointer";
       s.title = [Panel.descOf(S.colorKey, value), "Clic: filtrar"].filter(Boolean).join(" · ");
-      s.onclick = (e) => { e.stopPropagation(); pin(Panel.idsOf(S.colorKey, value)); };
+      s.onclick = (e) => { e.stopPropagation(); pin(Panel.idsOf(S.colorKey, value), true); };
       lg.appendChild(s);
     });
   }
@@ -192,19 +196,27 @@
   // En pantallas táctiles no hay hover: el resaltado se quedaría pegado tras un toque.
   // Ahí sólo el toque (fijar) resalta.
   const NO_HOVER = matchMedia("(hover: none), (pointer: coarse)").matches;
-  function setPinned(ids) { pinnedIds = ids && ids.size ? ids : null; paint(); }
+  function setPinned(ids, filters = null) {
+    pinnedIds = ids && ids.size ? ids : null;
+    // `filters`: true = filtrar la línea de tiempo con esta selección, false = dejar de
+    // filtrar, null = no tocar el filtro (abrir una ficha o resaltar una fila).
+    if (filters === true) filterIds = pinnedIds;
+    else if (filters === false) filterIds = null;
+    if (!pinnedIds) filterIds = null;
+    paint(); if (S.ds) renderTimeline(true);
+  }
   function setSearch(ids) { searchIds = ids || null; paint(); }
   // Filtrar: fija (o libera, si es la misma) la selección sin abrir la ficha; cierra la que estuviera abierta.
-  function pin(ids) {
+  function pin(ids, filters = null) {
     const same = pinnedIds && ids && pinnedIds.size === ids.size && [...pinnedIds].every((v) => ids.has(v));
-    Panel.close(); if (!same) setPinned(ids);
+    Panel.close(); if (!same) setPinned(ids, filters);
   }
   const onLabel = (ev) => !!(ev.target.closest && ev.target.closest(".lbl"));
   function highlight(ids, isClick = false) {
-    if (isClick) pinnedIds = pinnedIds && ids && pinnedIds.size === ids.size && [...pinnedIds].every((v) => ids.has(v)) ? null : ids;
+    if (isClick) setPinned(pinnedIds && ids && pinnedIds.size === ids.size && [...pinnedIds].every((v) => ids.has(v)) ? null : ids, false);
     else if (NO_HOVER) return;
     else hoverIds = ids;
-    paint();
+    if (!isClick) paint();
   }
   function paint() {
     const act = pinnedIds || hoverIds || searchIds, hit = (set) => [...set].some((i) => act.has(i));
@@ -221,6 +233,7 @@
     // reflujo con la página encogida y el navegador reajusta el scroll (la vista salta arriba).
     const CW = host.node() && host.node().clientWidth;
     host.selectAll("*").remove();
+    const svgBtn = $("sankey-svg"); if (svgBtn) svgBtn.hidden = true;
     const cols = S.cols.filter(Boolean), items = S.ds.items;
     if (cols.length < 2) return;
 
@@ -536,6 +549,7 @@
     // desplaza en horizontal cuando el SVG es más ancho que su contenedor.
     const svg = host.append("svg").attr("viewBox", [0, 0, W, H])
       .attr("width", W).attr("height", H).attr("role", "img");
+    if (svgBtn) svgBtn.hidden = false;
     cols.forEach((c) => {
       const ns = g.nodes.filter((n) => n.col === c); if (!ns.length) return;
       const dm = S.ds.dimensions.find((d) => d.key === c), first = c === cols[0];
@@ -548,13 +562,13 @@
       .attr("stroke-width", (d) => Math.max(1, d.width))
       .on("mouseenter", (_, d) => highlight(d.ids))
       .on("mouseleave", () => highlight(null))
-      .on("click", (ev, d) => { ev.stopPropagation(); pin(d.ids); })
+      .on("click", (ev, d) => { ev.stopPropagation(); pin(d.ids, true); })
       .on("mousemove.tip", (ev, d) => Panel.tipLink(ev, d)).on("mouseleave.tip", Panel.tipHide);
 
     const ng = svg.append("g").selectAll("g").data(g.nodes).join("g").attr("class", "sk-node")
       .on("mouseenter", (_, d) => highlight(d.ids))
       .on("mouseleave", () => highlight(null))
-      .on("click", (ev, d) => { ev.stopPropagation(); if (onLabel(ev)) Panel.toggleNode(d.col, d.label); else pin(d.ids); })
+      .on("click", (ev, d) => { ev.stopPropagation(); if (onLabel(ev)) Panel.toggleNode(d.col, d.label); else pin(d.ids, true); })
       .on("mousemove.tip", (ev, d) => Panel.tipNode(ev, d)).on("mouseleave.tip", Panel.tipHide);
 
     ng.append("rect").attr("x", (d) => d.x0).attr("y", (d) => d.y0).attr("width", (d) => d.x1 - d.x0)
@@ -628,6 +642,53 @@
     btn.hidden = !n;
     btn.textContent = n === 1 ? "1 oculto · Mostrar" : `${n} ocultos · Mostrar`;
   }
+  /* ---------- filtro de fechas: deslizador de dos tiradores ---------- */
+  const yrText = (v) => (v < 0 ? -v + " a.C." : String(v));
+  // Extremos: el nacimiento más antiguo menos 20 años y la muerte más reciente
+  // más 20 (quien sigue vivo cuenta hasta hoy).
+  function dateBounds() {
+    const valid = S.ds ? S.ds.items.filter((i) => i.__life.valid) : [];
+    let a = Infinity, b = -Infinity;
+    valid.forEach((i) => {
+      const L = i.__life, birth = L.birth ?? L.activeStart, death = L.death ?? L.activeEnd;
+      if (Number.isFinite(birth)) a = Math.min(a, birth);
+      if (Number.isFinite(death)) b = Math.max(b, death);
+    });
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return [CY - 120, CY];
+    a = Math.floor(a - 20); b = Math.ceil(b + 20);
+    return b > a ? [a, b] : [a, a + 1];
+  }
+  // Vuelca el filtro (`null` = sin filtro) en los tiradores, el relleno y la cifra.
+  function paintDates() {
+    const lo = $("tl-min"), hi = $("tl-max");
+    if (!lo || !hi || dateLo == null) return;
+    const span = dateHi - dateLo || 1;
+    const v0 = dateMin == null ? dateLo : dateMin, v1 = dateMax == null ? dateHi : dateMax;
+    lo.value = v0; hi.value = v1;
+    const fill = $("tl-range-fill");
+    if (fill) {
+      fill.style.left = ((v0 - dateLo) / span) * 100 + "%";
+      fill.style.right = 100 - ((v1 - dateLo) / span) * 100 + "%";
+    }
+    const out = $("tl-range-val");
+    if (out) out.textContent = `${yrText(v0)}–${yrText(v1)}`;
+    const btn = $("tl-dates-clear");
+    if (btn) btn.hidden = dateMin == null && dateMax == null;
+  }
+  // Recalcula los extremos al cambiar de dataset y recoloca los tiradores.
+  function syncDates() {
+    const [a, b] = dateBounds();
+    dateLo = a; dateHi = b;
+    const lo = $("tl-min"), hi = $("tl-max");
+    if (lo && hi) {
+      lo.min = hi.min = String(a); lo.max = hi.max = String(b);
+      lo.disabled = hi.disabled = !S.ds;
+    }
+    if (dateMin != null) dateMin = Math.max(a, Math.min(b, dateMin));
+    if (dateMax != null) dateMax = Math.max(a, Math.min(b, dateMax));
+    paintDates();
+  }
+  function resetDates() { dateMin = dateMax = null; syncDates(); }
   function renderTimeline(animate) {
     tlSortOpts();
     const host = d3.select("#timeline"), prev = new Map();
@@ -647,14 +708,17 @@
       const L = i.__life, a = L.birth ?? L.activeStart;
       return L.activeEnd >= (lo ?? -Infinity) && a <= (hi ?? Infinity);
     };
-    const rows = valid.filter((i) => !hiddenIds.has(i.id) && inRange(i));
+    // La selección fijada en el Sankey (o en la leyenda) también filtra aquí: sólo
+    // quedan sus autores, y los ocultos a mano siguen ocultos.
+    const rows = valid.filter((i) => !hiddenIds.has(i.id) && inRange(i) && (!filterIds || filterIds.has(i.id)));
     if (!rows.length) {
       // Si hay autores pero están ocultos, se ofrece el mensaje para recuperarlos.
       const someVisible = valid.some((i) => !hiddenIds.has(i.id));
       host.append("p").attr("class", "empty").text(
         !valid.length ? "Sin ítems con fechas válidas."
-          : someVisible ? "Ningún autor en ese rango de fechas."
-            : "Todos los autores están ocultos.");
+          : !someVisible ? "Todos los autores están ocultos."
+            : filterIds ? "Ningún autor de la selección con esas fechas."
+              : "Ningún autor en ese rango de fechas.");
       updateHiddenMsg();
       return;
     }
@@ -682,7 +746,9 @@
     if (d1 <= d0) d1 = d0 + 1;
     const x = d3.scaleLinear().domain([d0, d1]);
     if (lo == null && hi == null) x.nice();
-    x.range([26, PW - 12]);
+    // El extremo derecho deja sitio al botón flotante y al texto de la última marca
+    // del eje (que va centrado sobre su tick): así no se tapan.
+    x.range([26, PW - 62]);
     const x0 = x.domain()[0], x1 = x.domain()[1];
     const cl = (v) => Math.max(x0, Math.min(x1, v));
     const bx = (v) => x(cl(v));
@@ -711,13 +777,13 @@
     const rl = wire(svgL.append("g").selectAll("g").data(rows, (d) => d.id).join("g").attr("class", "tl-row")
       .each(function (d) { this.__y = yOf.get(d.id); })
       .attr("transform", (d) => `translate(0,${yOf.get(d.id)})`));
-    // Nombre alineado a la izquierda: antes va la casilla de ocultar y un espacio.
-    rl.append("text").attr("x", 20).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "start").attr("class", "lbl")
-      .text((d) => fitText(d.name || d.id, LW - 28));
-    // Ocultar: una casilla al principio de cada fila. Al ocultar se recalcula el layout
+    // Nombre alineado a la derecha; después, separada por un espacio, la casilla de ocultar.
+    rl.append("text").attr("x", LW - 24).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "end").attr("class", "lbl")
+      .text((d) => fitText(d.name || d.id, LW - 32));
+    // Ocultar: una casilla al final de cada fila. Al ocultar se recalcula el layout
     // sólo con los autores visibles y el encabezado ofrece restaurarlos.
     const hb = rl.append("g").attr("class", "tl-hide")
-      .attr("transform", `translate(8,${RH / 2})`)
+      .attr("transform", `translate(${LW - 12},${RH / 2})`)
       .attr("role", "button").attr("tabindex", 0)
       .attr("aria-label", (d) => "Ocultar " + (d.name || d.id));
     hb.append("rect").attr("x", -5).attr("y", -5).attr("width", 10).attr("height", 10).attr("rx", 2);
@@ -737,6 +803,12 @@
       [rl, rp].forEach((sel) => sel.attr("transform", (d) => `translate(0,${prev.has(d.id) ? prev.get(d.id) : yOf.get(d.id)})`)
         .transition().duration(500).attr("transform", (d) => `translate(0,${yOf.get(d.id)})`));
     if (prevScroll) pl.node().scrollLeft = prevScroll;
+    // Descarga del dibujo completo (columna fija y gráfico) en un solo SVG.
+    const saveTl = host.append("button").attr("class", "svg-save").attr("type", "button")
+      .attr("title", "Descargar la línea de tiempo en SVG")
+      .attr("aria-label", "Descargar la línea de tiempo en SVG")
+      .on("click", (ev) => { ev.stopPropagation(); exportTimeline(); });
+    saveTl.append("svg").attr("class", "ic").append("use").attr("href", "#i-save");
     updateHiddenMsg();
     paint();
   }
@@ -761,8 +833,8 @@
   function back() { if (VH.length < 2) return; VH.pop(); applyView(VH[VH.length - 1]); }
   function resetView() {
     if (!S.ds || !S.ds.items.length) return;
-    hiddenIds.clear(); dateMin = dateMax = null;
-    $("tl-min").value = $("tl-max").value = ""; $("tl-dates-clear").hidden = true;
+    hiddenIds.clear();
+    resetDates();
     const d = S.ds.defaults.length >= 2 ? S.ds.defaults : S.ds.dimensions.slice(0, 3).map((x) => x.key);
     const cols = [d[0], d[1], d[2] || null].filter((x, i) => x || i < 2);
     applyView(JSON.stringify({ cols, colorKey: cols[0] || null, tlSort: "start", tlDesc: false, skSort: "value", skDesc: false, cohort: 50 }));
@@ -779,12 +851,80 @@
     a.download = S.file.replace(/\.(csv|json)$/i, "") + "." + kind; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }
 
+  /* ---------- exportar los gráficos en SVG ---------- */
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  // El aspecto vive en clases y variables CSS, que un SVG suelto no hereda: se copian
+  // los estilos ya calculados en línea.
+  const SVG_CSS = [
+    "fill", "fill-opacity", "fill-rule", "stroke", "stroke-width", "stroke-opacity",
+    "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin",
+    "opacity", "paint-order", "font-family", "font-size", "font-weight", "font-style",
+    "letter-spacing", "text-anchor", "dominant-baseline", "visibility", "shape-rendering",
+  ];
+  function inlineSvgStyles(src, dst) {
+    const cs = getComputedStyle(src);
+    let css = "";
+    SVG_CSS.forEach((p) => { const v = cs.getPropertyValue(p); if (v) css += p + ":" + v + ";"; });
+    dst.setAttribute("style", css);
+    for (let i = 0; i < src.children.length; i++) inlineSvgStyles(src.children[i], dst.children[i]);
+  }
+  // Fondo del panel: en tema oscuro el dibujo claro se perdería sobre blanco.
+  function addSvgBg(el, hostEl) {
+    const w = +el.getAttribute("width"), h = +el.getAttribute("height");
+    const bg = getComputedStyle(hostEl.closest(".panel") || document.body).backgroundColor;
+    if (!w || !h || !bg || bg === "rgba(0, 0, 0, 0)" || bg === "transparent") return;
+    const r = document.createElementNS(SVG_NS, "rect");
+    r.setAttribute("width", w); r.setAttribute("height", h); r.setAttribute("fill", bg);
+    el.insertBefore(r, el.firstChild);
+  }
+  function svgCopy(src) {
+    const clone = src.cloneNode(true);
+    inlineSvgStyles(src, clone);
+    clone.setAttribute("xmlns", SVG_NS);
+    return clone;
+  }
+  function downloadSvg(el, name) {
+    const data = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(el);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([data], { type: "image/svg+xml;charset=utf-8" }));
+    a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  const svgName = (what) => (S.file || "grafico").replace(/\.(csv|json)$/i, "") + "-" + what + ".svg";
+  function exportSankey() {
+    const svg = $("sankey").querySelector("svg");
+    if (!svg) return;
+    const clone = svgCopy(svg);
+    addSvgBg(clone, $("sankey"));
+    downloadSvg(clone, svgName("sankey"));
+  }
+  // La línea de tiempo son dos SVG (columna fija y gráfico): se unen en uno solo.
+  function exportTimeline() {
+    const lab = $("timeline").querySelector(".tl-labels svg"), plot = $("timeline").querySelector(".tl-plot svg");
+    if (!lab || !plot) return;
+    const lw = +lab.getAttribute("width"), pw = +plot.getAttribute("width"), h = +lab.getAttribute("height");
+    const out = document.createElementNS(SVG_NS, "svg");
+    out.setAttribute("xmlns", SVG_NS);
+    out.setAttribute("width", lw + pw); out.setAttribute("height", h);
+    out.setAttribute("viewBox", `0 0 ${lw + pw} ${h}`);
+    addSvgBg(out, $("timeline"));
+    const l = svgCopy(lab), p = svgCopy(plot);
+    // Las casillas de ocultar son controles, no datos: no van en el archivo.
+    l.querySelectorAll(".tl-hide").forEach((n) => n.remove());
+    p.setAttribute("x", lw);
+    const sep = document.createElementNS(SVG_NS, "line");
+    sep.setAttribute("x1", lw); sep.setAttribute("x2", lw); sep.setAttribute("y1", 0); sep.setAttribute("y2", h);
+    sep.setAttribute("stroke", getComputedStyle($("timeline").querySelector(".tl-labels")).borderRightColor || "#ddd");
+    out.append(l, p, sep);
+    downloadSvg(out, svgName("linea-de-tiempo"));
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     $("dl-csv").onclick = () => download("csv"); $("dl-json").onclick = () => download("json");
+    $("sankey-svg").onclick = (ev) => { ev.stopPropagation(); exportSankey(); };
 
     // Clear pinned elements when clicking on the background
     document.addEventListener("click", (e) => {
-       if (e.target.closest && e.target.closest("#detail,.top,.panel-head,.legend,#report,#help,#help-backdrop")) return;
+       if (e.target.closest && e.target.closest("#detail,.top,.panel-head,.legend,#report,#help,#help-backdrop,.svg-save")) return;
        if (pinnedIds) { highlight(null, true); Panel.close(); }
     });
     $("tl-sort").addEventListener("change", (e) => { S.tlSort = e.target.value; renderTimeline(true); });

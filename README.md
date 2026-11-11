@@ -89,13 +89,19 @@ También puedes cargar archivos sin tocar el repositorio con **Carpeta…** o
   sigue vivo/activo. La columna de nombres queda fija y solo el gráfico se
   desplaza en horizontal. **Orden** agrupa por el campo elegido. La casilla al
   final de cada fila oculta al autor (el aviso «n ocultos · Mostrar» los
-  recupera) y los campos **Fechas** limitan el periodo visible.
+  recupera) y el deslizador **Fechas** limita el periodo visible (va del primer
+  nacimiento −20 años a la última muerte +20). Con un filtro activo en el
+  Sankey solo se listan esos autores; al limpiarlo (clic en el fondo) vuelven
+  todos menos los que ocultaste a mano.
 - **Ficha**: edita campos, añade o borra autores, deshace y rehace, y exporta
   en CSV o JSON. **Notas (.meta.json)** guarda descripciones y cambios;
   **Importar notas…** los recupera. Los cambios también persisten en
   `localStorage` del navegador.
 - **Vistas**: `Alt`+`←` vuelve a la vista anterior; **Restablecer vista**
   devuelve columnas, color y orden por defecto.
+- **Guardar**: el botón flotante de la esquina superior de cada gráfico descarga
+  el dibujo en `.svg`, con los estilos y el fondo del tema activo ya incrustados
+  (en la línea de tiempo, columna de nombres y gráfico en un solo archivo).
 
 La ayuda con todo esto también está dentro de la app, en el botón
 **¿Cómo funciona?**.
