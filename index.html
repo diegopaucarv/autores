@@ -456,7 +456,6 @@
                 gap: var(--s1);
                 max-height: 180px;
                 overflow-y: auto;
-                overscroll-behavior-y: contain;
                 scrollbar-color: var(--rule) transparent;
             }
             .config-pop #textsel-list label {
@@ -521,7 +520,9 @@
                 min-width: 0;
                 overflow-x: auto;
                 overflow-y: hidden;
-                overscroll-behavior: contain;
+                /* Sólo en el eje X: con «contain» a secas, el área se traga la rueda
+                   vertical (no puede desplazarse en Y) y la página deja de bajar. */
+                overscroll-behavior-x: contain;
                 scrollbar-color: var(--rule) transparent;
             }
             .empty {
