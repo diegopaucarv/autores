@@ -366,5 +366,5 @@
     });
   }
 
-  root.Panel = { init, onLoad, back: goBack, showItem, showNode, toggleItem, toggleNode, close, tipItem, tipNode, tipLink, tipHide, place, extra, hasExtra: () => showText.size > 0, descOf, addAuthor, deleteAuthor };
+  root.Panel = { init, onLoad, back: goBack, showItem, showNode, toggleItem, toggleNode, close, tipItem, tipNode, tipLink, tipHide, place, extra, hasExtra: () => showText.size > 0, descOf, idsOf, addAuthor, deleteAuthor };
 })(typeof window !== "undefined" ? window : globalThis);

@@ -169,9 +169,16 @@
   function renderLegend() {
     const lg = $("legend"); lg.innerHTML = ""; if (!S.colorKey) return;
     const d = S.ds.dimensions.find((x) => x.key === S.colorKey);
-    (d ? d.values : []).forEach(({ value }) => {
-      const s = document.createElement("span"); s.innerHTML = `<i style="background:${color(value)}"></i>`; s.append(value); s.style.cursor = "pointer"; s.title = Panel.descOf(S.colorKey, value) || "Clic: ficha y descripción";
-      s.onclick = (e) => { e.stopPropagation(); Panel.toggleNode(S.colorKey, value); }; lg.appendChild(s);
+    // Orden alfanumérico por defecto (los números se comparan como números, no como texto)
+    // y el clic sólo filtra (fija/libera), sin abrir la ficha.
+    const entries = [...(d ? d.values : [])].sort((a, b) =>
+      String(a.value).localeCompare(String(b.value), "es", { numeric: true, sensitivity: "base" }));
+    entries.forEach(({ value }) => {
+      const s = document.createElement("span"); s.innerHTML = `<i style="background:${color(value)}"></i>`; s.append(value);
+      s.style.cursor = "pointer";
+      s.title = [Panel.descOf(S.colorKey, value), "Clic: filtrar"].filter(Boolean).join(" · ");
+      s.onclick = (e) => { e.stopPropagation(); pin(Panel.idsOf(S.colorKey, value)); };
+      lg.appendChild(s);
     });
   }
 
