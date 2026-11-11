@@ -711,12 +711,13 @@
     const rl = wire(svgL.append("g").selectAll("g").data(rows, (d) => d.id).join("g").attr("class", "tl-row")
       .each(function (d) { this.__y = yOf.get(d.id); })
       .attr("transform", (d) => `translate(0,${yOf.get(d.id)})`));
-    rl.append("text").attr("x", LW - 24).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "end").attr("class", "lbl")
-      .text((d) => fitText(d.name || d.id, LW - 34));
-    // Ocultar: una casilla al final de cada fila. Al ocultar se recalcula el layout
+    // Nombre alineado a la izquierda: antes va la casilla de ocultar y un espacio.
+    rl.append("text").attr("x", 20).attr("y", RH / 2).attr("dy", "0.35em").attr("text-anchor", "start").attr("class", "lbl")
+      .text((d) => fitText(d.name || d.id, LW - 28));
+    // Ocultar: una casilla al principio de cada fila. Al ocultar se recalcula el layout
     // sólo con los autores visibles y el encabezado ofrece restaurarlos.
     const hb = rl.append("g").attr("class", "tl-hide")
-      .attr("transform", `translate(${LW - 18},${RH / 2})`)
+      .attr("transform", `translate(8,${RH / 2})`)
       .attr("role", "button").attr("tabindex", 0)
       .attr("aria-label", (d) => "Ocultar " + (d.name || d.id));
     hb.append("rect").attr("x", -5).attr("y", -5).attr("width", 10).attr("height", 10).attr("rx", 2);
